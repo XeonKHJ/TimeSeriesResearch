@@ -1,6 +1,7 @@
 import os
 import os.path
 import pandas
+import torch
 from DatasetReader.DatasetReader import DatasetReader
 
 class NABReader(DatasetReader):
@@ -10,7 +11,19 @@ class NABReader(DatasetReader):
 
     def read(self):
         fileList = os.listdir(self.folderPath)
+        fulldata = list()
+        dataTimestampLengths = list()
+        featureSize = 1
+        maxDataLength = 0
         for file in fileList:
             filePath = os.path.join(self.folderPath, file)
             data = pandas.read_csv(filePath)
-            print(data)
+            datasetItem = data.value.to_list()
+            fulldata.append(datasetItem)
+            dataTimestampLengths.append(datasetItem.__len__())
+            maxDataLength = max(datasetItem.__len__(), maxDataLength)
+        fulldata.sort(key=(lambda elem:len(elem)), reverse=True)
+        dataTensor = torch.zeros([fulldata.__len__(), maxDataLength, featureSize])
+        for i in range(fulldata.__len__()):
+            dataTensor[i][0:fulldata[i].__len__()] = torch.tensor(fulldata[i][:]).reshape([-1,1])
+        return dataTensor, dataTimestampLengths
