@@ -12,27 +12,29 @@ class LstmRNN(nn.Module):
         - output_size: number of output
         - num_layers: layers of LSTM to stack
     """
-    def __init__(self, input_size, hidden_size=1, output_size=1, num_layers=1):
+    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1):
         super().__init__()
-        
+        self.feature_size = feature_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
         # forward LSTM
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
+        self.lstm = nn.LSTM(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
         
         # reveresd LSTM
-        self.rlstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True) 
-        self.forwardCalculation = nn.Linear(12,6)
+        self.rlstm = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True) 
+        self.forwardCalculation = nn.Linear(2*hidden_size,output_size)
         self.finalCalculation = nn.Sigmoid()
-        self.head_linear = nn.Linear(6,6)
-        self.tail_linear = nn.Linear(6,6)
+        self.head_linear = nn.Linear(hidden_size,output_size)
+        self.tail_linear = nn.Linear(hidden_size,output_size)
         self.head_final = nn.Sigmoid()
         self.tail_final = nn.Sigmoid()
 
-    def forward(self, _x, xTimestampSizes):
-        x = torchrnn.pack_padded_sequence(_x, xTimestampSizes, True)
+    def forward(self, to_x, xTimestampSizes):
+        x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, b = self.lstm(x)  # _x is input, size (seq_len, batch, input_size)
 
-        _rx = torch.flip(_x, [1])
-        rx = torchrnn.pack_padded_sequence(_rx, xTimestampSizes, True)
+        to_rx = torch.flip(to_x, [1])
+        rx = torchrnn.pack_padded_sequence(to_rx, xTimestampSizes, True)
         rx, rb = self.rlstm(rx)
         
         x, xBatchSize = torchrnn.pad_packed_sequence(x, batch_first=True)
@@ -57,7 +59,7 @@ class LstmRNN(nn.Module):
             xrx = torch.stack([forward_stacking_x, backward_stacking_x], 2)
             xrx = torch.transpose(xrx, 2, 3)
 
-            xrx = torch.reshape(xrx, (xrx.shape[0], xrx.shape[1], 12))
+            xrx = torch.reshape(xrx, (xrx.shape[0], xrx.shape[1], 2*self.hidden_size))
 
             x = self.forwardCalculation(xrx)
             x = self.finalCalculation(x)
@@ -65,14 +67,13 @@ class LstmRNN(nn.Module):
             #torch.reshape(head_x, (head_x.shape[0], head_x.shape[1], 1))
             head_x = self.head_linear(head_x)
             head_x = self.head_final(head_x)
-            head_x = torch.reshape(head_x, (head_x.shape[0], 1, 6))
+            head_x = torch.reshape(head_x, (head_x.shape[0], 1, self.output_size))
             tail_x = self.tail_linear(tail_x)
             tail_x = self.tail_final(tail_x)
-            tail_x = torch.reshape(tail_x, (tail_x.shape[0], 1, 6))
+            tail_x = torch.reshape(tail_x, (tail_x.shape[0], 1, self.output_size))
             # need to stack forward LSTM and reversed LSTM together.
 
-            stacked_x = torch.stack([head_x, x,tail_x], 1)
-            stacked_x = torch.reshape(stacked_x, (stacked_x.shape[0], stacked_x.shape[1], 6))
+            stacked_x = torch.concat([head_x, x, tail_x], 1)
 
         #s, b, h = x.shape  # x is output, size (seq_len, batch, hidden_size)
         #x = x.view(s*b, h)

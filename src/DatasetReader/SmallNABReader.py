@@ -4,7 +4,7 @@ import pandas
 import torch
 from DatasetReader.DatasetReader import DatasetReader
 
-class NABReader(DatasetReader):
+class SmallNABReader(DatasetReader):
     def __init__(self, folderPath) -> None:
         super().__init__()
         self.folderPath = folderPath
@@ -19,6 +19,7 @@ class NABReader(DatasetReader):
             filePath = os.path.join(self.folderPath, file)
             data = pandas.read_csv(filePath)
             datasetItem = data.value.to_list()
+            datasetItem = datasetItem[0:100]
             fulldata.append(datasetItem)
             maxDataLength = max(datasetItem.__len__(), maxDataLength)
         fulldata.sort(key=(lambda elem:len(elem)), reverse=True)
