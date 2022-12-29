@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class TwowayRNN(nn.Module):
+class OffsetTwowayRNN(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -40,9 +40,15 @@ class TwowayRNN(nn.Module):
         
         x, xBatchSize = torchrnn.pad_packed_sequence(x, batch_first=True)
         rx, rxBatchSize = torchrnn.pad_packed_sequence(rx, batch_first=True)
+        forward_to_stack_x = torch.transpose(x, 0, 1)
+        backward_to_stack_x = torch.transpose(rx, 0, 1)
+        # stack x and rx
+        T = x.shape[1] - 1
 
+        forward_stacking_x = torch.transpose(forward_to_stack_x[0:forward_to_stack_x.shape[0]-2], 0, 1)
+        backward_stacking_x = torch.transpose(backward_to_stack_x[2:forward_to_stack_x.shape[0]], 0, 1)
 
-        xrx = torch.stack([x, rx], 2)
+        xrx = torch.stack([forward_stacking_x, backward_stacking_x], 2)
         xrx = torch.transpose(xrx, 2, 3)
 
         xrx = torch.reshape(xrx, (xrx.shape[0], xrx.shape[1], 2*self.hidden_size))
@@ -80,11 +86,11 @@ class TwowayRNN(nn.Module):
     def getInputTensor(self, dataset, datasetLengths):
         inputList = torch.split(dataset, 1, 1)
         inputLengths = (numpy.array(datasetLengths)).tolist()
-        outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1], dataset.shape[2]])
+        outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1] - 2, dataset.shape[2]])
         inputDataset = torch.zeros([dataset.shape[0], dataset.shape[1], dataset.shape[2]])
-        for i in range(inputList.__len__()):
+        for i in range(inputList.__len__() - 2):
             for j in range(outputDataset.shape[0]):
-                outputDataset[j][i] = 1.0
+                outputDataset[j][i] = inputList[i+1][j]
 
         for i in range(inputList.__len__()):
             for j in range(outputDataset.shape[0]):
