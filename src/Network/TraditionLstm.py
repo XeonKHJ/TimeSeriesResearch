@@ -66,9 +66,9 @@ class TraditionLstm(nn.Module):
     def getInputTensor(self, dataset, datasetLengths):
         inputList = torch.split(dataset, 1, 1)
         inputLengths = (numpy.array(datasetLengths)).tolist()
-        outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1] - 2, dataset.shape[2]])
+        outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1] - 1, dataset.shape[2]])
         inputDataset = torch.zeros([dataset.shape[0], dataset.shape[1], dataset.shape[2]])
-        for i in range(inputList.__len__() - 2):
+        for i in range(inputList.__len__() - 1):
             for j in range(outputDataset.shape[0]):
                 outputDataset[j][i] = inputList[i+1][j]
 

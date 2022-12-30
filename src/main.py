@@ -4,10 +4,11 @@ import numpy
 import matplotlib.pyplot
 import math
 from DatasetReader.SmallNABReader import SmallNABReader
-from OffsetTwowayRNN import OffsetTwowayRNN
-from TraditionLstm import TraditionLstm
+from Network.LstmAutoencoder import LstmAutoencoder
+from Network.OffsetTwowayRNN import OffsetTwowayRNN
+from Network.TraditionLstm import TraditionLstm
 from DatasetReader.NABReader import NABReader
-from TwowayRNN import TwowayRNN
+from Network.TwowayRNN import TwowayRNN
 
 folder = "C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\realTweets\\realTweets"
 datasetReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\realTweets\\realTweets")
@@ -25,7 +26,7 @@ if __name__ == '__main__':
     output_size = 1
 
 
-    lstm_model = OffsetTwowayRNN(feature_size,4,output_size,2)
+    lstm_model = LstmAutoencoder(feature_size,4,output_size,2)
 
     maxData = max(normalDataset.max(), abnormalDataset.max())
     minData = min(normalDataset.min(), abnormalDataset.min())

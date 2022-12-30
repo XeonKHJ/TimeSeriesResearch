@@ -2,9 +2,9 @@ import os
 import os.path
 import pandas
 import torch
-from DatasetReader.DatasetReader import DatasetReader
+from DatasetReader.DatasetReader import IDatasetReader
 
-class NABReader(DatasetReader):
+class NABReader(IDatasetReader):
     def __init__(self, folderPath) -> None:
         super().__init__()
         self.folderPath = folderPath

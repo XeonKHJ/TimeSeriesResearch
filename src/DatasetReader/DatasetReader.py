@@ -1,4 +1,4 @@
-class DatasetReader(object):
+class IDatasetReader(object):
     def __init__(self):
         pass
 
