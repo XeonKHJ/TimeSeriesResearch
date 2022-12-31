@@ -5,5 +5,5 @@ class IDataSeperator:
     def getValidationSet(self, folder):
         pass
 
-    def getTrainningSEt(self, folder):
+    def getTrainningSet(self, folder):
         pass
