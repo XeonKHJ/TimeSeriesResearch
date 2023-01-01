@@ -9,6 +9,7 @@ from Network.OffsetTwowayRNN import OffsetTwowayRNN
 from Network.TraditionLstm import TraditionLstm
 from DatasetReader.NABReader import NABReader
 from Network.TwowayRNN import TwowayRNN
+from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 
@@ -21,7 +22,7 @@ abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResea
 def getConfig():
     feature_size = 1
     output_size = 1
-    mlModel = LstmAutoencoder(feature_size,4,output_size,2)
+    mlModel = OffsetBiLstmAutoencoder(feature_size,4,output_size,2)
     optimizer = torch.optim.Adam(mlModel.parameters(), lr=1e-2)
     lossFunc = torch.nn.MSELoss()
     datasetSeperator = NoSepDataSeperator()
@@ -30,7 +31,6 @@ def getConfig():
 
 if __name__ == '__main__':
     # dataset, datasetLengths = datasetReader.read()
-
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
 

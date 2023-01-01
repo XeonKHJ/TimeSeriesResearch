@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class OffsetTwowayRNN(nn.Module):
+class OffsetBiLstmAutoencoder(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -18,45 +18,33 @@ class OffsetTwowayRNN(nn.Module):
         self.feature_size = feature_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-        # forward LSTM
-        self.lstm = nn.LSTM(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
-        
-        # reveresd LSTM
-        self.rlstm = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True) 
-        self.forwardCalculation = nn.Linear(2*hidden_size,output_size)
+
+        self.lstmEncoder = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True)
+        self.rlstmEncoder = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True)
+
+        self.lstmDecoder = nn.LSTM(2 * hidden_size, hidden_size, num_layers,batch_first =True)
+
+        self.forwardCalculation = nn.Linear(hidden_size,output_size)
         self.finalCalculation = nn.Sigmoid()
-        self.head_linear = nn.Linear(hidden_size,output_size)
-        self.tail_linear = nn.Linear(hidden_size,output_size)
-        self.head_final = nn.Sigmoid()
-        self.tail_final = nn.Sigmoid()
 
-    def forward(self, paddedX, xTimestampSizes):
-        packedX = torchrnn.pack_padded_sequence(paddedX, xTimestampSizes, True)
-        packedX, b = self.lstm(packedX)  # _x is input, size (seq_len, batch, input_size)
+    def forward(self, to_x, xTimestampSizes):
+        x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
+        encoded_packed_x, b = self.lstmEncoder(x)
+        encoded_packed_rx, b = self.rlstmEncoder(x)
 
-        paddedRX = torch.flip(paddedX, [1])
-        packedRX = torchrnn.pack_padded_sequence(paddedRX, xTimestampSizes, True)
-        packedRX, rb = self.rlstm(packedRX)
-        
-        paddedX, xBatchSize = torchrnn.pad_packed_sequence(packedX, batch_first=True)
-        paddedRX, rxBatchSize = torchrnn.pad_packed_sequence(packedRX, batch_first=True)
-        forward_to_stack_x = torch.transpose(packedX, 0, 1)
-        backward_to_stack_x = torch.transpose(paddedRX, 0, 1)
+        encoded_paded_x, xBatchSize = torchrnn.pad_packed_sequence(encoded_packed_x, True)
+        encoded_paded_rx, rxBatchSize = torchrnn.pad_packed_sequence(encoded_packed_rx, True)
 
-        forward_stacking_x = torch.transpose(forward_to_stack_x[0:forward_to_stack_x.shape[0]-2], 0, 1)
-        backward_stacking_x = torch.transpose(backward_to_stack_x[2:forward_to_stack_x.shape[0]], 0, 1)
+        encoded_paded_xrx = torch.concat((encoded_paded_rx, encoded_paded_x), 2)
+        encoded_packed_xrx = torchrnn.pack_padded_sequence(encoded_paded_xrx, xTimestampSizes, True)
 
-        xrx = torch.stack([forward_stacking_x, backward_stacking_x], 2)
-        xrx = torch.transpose(xrx, 2, 3)
+        decoded_packed_x, b = self.lstmDecoder(encoded_packed_xrx)
+        decoded_paded_x, decodedXBatchSize = torchrnn.pad_packed_sequence(decoded_packed_x, True)
 
-        xrx = torch.reshape(xrx, (xrx.shape[0], xrx.shape[1], 2*self.hidden_size))
+        x = self.forwardCalculation(decoded_paded_x)
+        x = self.finalCalculation(x)
 
-        packedX = self.forwardCalculation(xrx)
-        packedX = self.finalCalculation(packedX)
-
-        return packedX
-    
-    
+        return x
     
     @staticmethod
     def PadData(dataLists, featureSize):
@@ -83,7 +71,7 @@ class OffsetTwowayRNN(nn.Module):
 
     def getInputTensor(self, dataset, datasetLengths):
         inputList = torch.split(dataset, 1, 1)
-        inputLengths = (numpy.array(datasetLengths)).tolist()
+        inputLengths = (numpy.array(datasetLengths) - 2).tolist()
         outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1] - 2, dataset.shape[2]])
         inputDataset = torch.zeros([dataset.shape[0], dataset.shape[1], dataset.shape[2]])
         for i in range(inputList.__len__() - 2):
