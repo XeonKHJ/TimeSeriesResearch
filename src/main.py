@@ -22,7 +22,12 @@ abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResea
 def getConfig():
     feature_size = 1
     output_size = 1
-    mlModel = OffsetBiLstmAutoencoder(feature_size,4,output_size,2)
+
+    try:
+        mlModel = torch.load("model.pt")
+    except:
+        mlModel = OffsetBiLstmAutoencoder(feature_size,4,output_size,2)
+    
     optimizer = torch.optim.Adam(mlModel.parameters(), lr=1e-2)
     lossFunc = torch.nn.MSELoss()
     datasetSeperator = NoSepDataSeperator()
@@ -69,7 +74,7 @@ if __name__ == '__main__':
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        epoch += 1
+
         if epoch % 10 == 0:
             # analysisLossFunc = torch.nn.MSELoss()
             validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
@@ -88,7 +93,7 @@ if __name__ == '__main__':
 
             fig, ax = matplotlib.pyplot.subplots()
             fig2, ax2 = matplotlib.pyplot.subplots()
-            print("ready to draw")
+
             ax.plot(x, label="dataset")
             ax.plot(px, label="predict")
             ax.legend()
@@ -96,3 +101,6 @@ if __name__ == '__main__':
             ax2.plot(abpx, label="ab predict")
             ax2.legend()
             matplotlib.pyplot.show()
+            torch.save(mlModel, 'model.pt')
+
+        
