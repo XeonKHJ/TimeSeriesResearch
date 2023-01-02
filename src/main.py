@@ -14,12 +14,9 @@ from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 
-folder = "C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\realTweets\\realTweets"
-datasetReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\realTweets\\realTweets")
-
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
-fileName = "bilstmautoencoder.pt"
+fileName = "lstmautoencoder.pt"
 
 def getConfig():
     feature_size = 1
@@ -28,7 +25,7 @@ def getConfig():
     try:
         mlModel = torch.load(fileName)
     except:
-        mlModel = OffsetBiLstmAutoencoder(feature_size,4,output_size,2)
+        mlModel = LstmAutoencoder(feature_size,4,output_size,2)
     
     optimizer = torch.optim.Adam(mlModel.parameters(), lr=1e-2)
     lossFunc = torch.nn.MSELoss()
@@ -49,8 +46,6 @@ if __name__ == '__main__':
     normalDataset = (normalDataset - minData) / (maxData - minData)
     abnormalDataset = (abnormalDataset - minData) / (maxData - minData)
 
-    seprateIdx = math.ceil(normalDataset.__len__()/2)
-
     trainDataset = datasetSeperator.getTrainningSet(normalDataset)
     trainsetLengths = datasetSeperator.getTrainningSet(normalDatasetLengths)
 
@@ -59,16 +54,18 @@ if __name__ == '__main__':
 
     toTrainDataset, labelDataset, labelDatasetLengths = mlModel.getInputTensor(trainDataset, trainsetLengths)
     
-    batchSize = 2
+    batchSize = toTrainDataset.shape[0]
     currentIdx = 0
     datasetSize = toTrainDataset.shape[0]
     epoch = 0
     
     while True:
-        startIdx = currentIdx % (datasetSize - batchSize)
+        if datasetSize - batchSize == 0:
+            startIdx = 0
+        else:
+            startIdx = currentIdx % (datasetSize - batchSize)
         endIdx = startIdx + batchSize
         currentIdx += batchSize 
-
         trainSet = toTrainDataset[startIdx:endIdx]
         output = mlModel(trainSet, labelDatasetLengths[startIdx:endIdx])
         labelTensor = torch.full(output.shape, 1.0)
@@ -79,15 +76,11 @@ if __name__ == '__main__':
         optimizer.zero_grad()
 
         if epoch % 2 == 0:
-            # analysisLossFunc = torch.nn.MSELoss()
             validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
             abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
             anaOutput = mlModel(validInput, validLengthes)
-            # normalResult = analysisLossFunc(anaOutput, torch.full(anaOutput.shape, 1.0))
             anaAbnormalOutput = mlModel(abInput, abLengths)
-            # abnormalResult = analysisLossFunc(anaAbnormalOutput, torch.full(anaAbnormalOutput.shape, 0.0))
             print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
-            
             x = validOutput[1].reshape([-1]).tolist()
             px = anaOutput[1].reshape([-1]).tolist()
 
