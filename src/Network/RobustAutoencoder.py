@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class LstmAutoencoder(nn.Module):
+class RobustAutoencoder(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -33,7 +33,7 @@ class LstmAutoencoder(nn.Module):
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
         x = self.forwardCalculation(x)
-        x = self.finalCalculation(x)
+        # x = self.finalCalculation(x)
 
         return x
     
