@@ -3,6 +3,7 @@ import torch.nn
 import numpy
 import matplotlib.pyplot
 import math
+from DataNormalizer.DataNormalizer import DataNormalizer
 from DatasetReader.SmallNABReader import SmallNABReader
 from Logger.PlotLogger import PlotLogger
 from Network.LstmAutoencoder import LstmAutoencoder
@@ -16,7 +17,7 @@ from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
-fileName = "lstmautoencoder.pt"
+fileName = "SavedModels\\lstmautoencoderwithcorrector.pt"
 
 def getConfig():
     feature_size = 1
@@ -31,7 +32,8 @@ def getConfig():
     lossFunc = torch.nn.MSELoss()
     datasetSeperator = NoSepDataSeperator()
     logger = PlotLogger()
-    return mlModel, datasetSeperator, optimizer, lossFunc, logger
+    dataNormalizer = DataNormalizer()
+    return mlModel, datasetSeperator, optimizer, lossFunc, logger, dataNormalizer
 
 
 if __name__ == '__main__':
@@ -39,12 +41,12 @@ if __name__ == '__main__':
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
 
-    mlModel, datasetSeperator, optimizer, lossFunc, logger = getConfig()
+    mlModel, datasetSeperator, optimizer, lossFunc, logger, dataNormalizer = getConfig()
 
-    maxData = max(normalDataset.max(), abnormalDataset.max())
-    minData = min(normalDataset.min(), abnormalDataset.min())
-    normalDataset = (normalDataset - minData) / (maxData - minData)
-    abnormalDataset = (abnormalDataset - minData) / (maxData - minData)
+    dataNormalizer.addDatasetToRef(normalDataset)
+    dataNormalizer.addDatasetToRef(abnormalDataset)
+    normalDataset = dataNormalizer.normalizeDataset(normalDataset)
+    abnormalDataset = dataNormalizer.normalizeDataset(abnormalDataset)
 
     trainDataset = datasetSeperator.getTrainningSet(normalDataset)
     trainsetLengths = datasetSeperator.getTrainningSet(normalDatasetLengths)
@@ -76,6 +78,7 @@ if __name__ == '__main__':
         optimizer.zero_grad()
 
         if epoch % 2 == 0:
+            mlModel.eval()
             validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
             abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
             anaOutput = mlModel(validInput, validLengthes)
@@ -89,6 +92,7 @@ if __name__ == '__main__':
 
             logger.logResult(x, px)
             logger.logResult(abx, abpx)
+            mlModel.train()
             torch.save(mlModel, fileName)
         epoch += 1
 
