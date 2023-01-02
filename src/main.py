@@ -4,6 +4,7 @@ import numpy
 import matplotlib.pyplot
 import math
 from DatasetReader.SmallNABReader import SmallNABReader
+from Logger.PlotLogger import PlotLogger
 from Network.LstmAutoencoder import LstmAutoencoder
 from Network.OffsetTwowayRNN import OffsetTwowayRNN
 from Network.TraditionLstm import TraditionLstm
@@ -18,20 +19,22 @@ datasetReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\
 
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
+fileName = "bilstmautoencoder.pt"
 
 def getConfig():
     feature_size = 1
     output_size = 1
 
     try:
-        mlModel = torch.load("model.pt")
+        mlModel = torch.load(fileName)
     except:
         mlModel = OffsetBiLstmAutoencoder(feature_size,4,output_size,2)
     
     optimizer = torch.optim.Adam(mlModel.parameters(), lr=1e-2)
     lossFunc = torch.nn.MSELoss()
     datasetSeperator = NoSepDataSeperator()
-    return mlModel, datasetSeperator, optimizer, lossFunc
+    logger = PlotLogger()
+    return mlModel, datasetSeperator, optimizer, lossFunc, logger
 
 
 if __name__ == '__main__':
@@ -39,7 +42,7 @@ if __name__ == '__main__':
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
 
-    mlModel, datasetSeperator, optimizer, lossFunc = getConfig()
+    mlModel, datasetSeperator, optimizer, lossFunc, logger = getConfig()
 
     maxData = max(normalDataset.max(), abnormalDataset.max())
     minData = min(normalDataset.min(), abnormalDataset.min())
@@ -75,7 +78,7 @@ if __name__ == '__main__':
         optimizer.step()
         optimizer.zero_grad()
 
-        if epoch % 10 == 0:
+        if epoch % 2 == 0:
             # analysisLossFunc = torch.nn.MSELoss()
             validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
             abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
@@ -91,16 +94,9 @@ if __name__ == '__main__':
             abx = abOutput[1].reshape([-1]).tolist()
             abpx = anaAbnormalOutput[1].reshape([-1]).tolist()
 
-            fig, ax = matplotlib.pyplot.subplots()
-            fig2, ax2 = matplotlib.pyplot.subplots()
-
-            ax.plot(x, label="dataset")
-            ax.plot(px, label="predict")
-            ax.legend()
-            ax2.plot(abx, label="ab dataset")
-            ax2.plot(abpx, label="ab predict")
-            ax2.legend()
-            matplotlib.pyplot.show()
-            torch.save(mlModel, 'model.pt')
+            logger.logResult(x, px)
+            logger.logResult(abx, abpx)
+            torch.save(mlModel, fileName)
+        epoch += 1
 
         
