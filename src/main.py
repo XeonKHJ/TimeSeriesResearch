@@ -95,5 +95,3 @@ if __name__ == '__main__':
             mlModel.train()
             torch.save(mlModel, fileName)
         epoch += 1
-
-        
