@@ -8,6 +8,7 @@ from DataNormalizer.NoDataNormalizer import NoDataNormalizer
 from DatasetReader.SmallNABReader import SmallNABReader
 from Logger.PlotLogger import PlotLogger
 from Logger.SimpleLogger import SimpleLogger
+from Network.LstmAutoencoderWithCorrector import LstmAutoencoderWithCorrector
 from Network.LstmAutoencoder import LstmAutoencoder
 from Network.OffsetTwowayRNN import OffsetTwowayRNN
 from Network.TraditionLstm import TraditionLstm
@@ -29,7 +30,7 @@ def getConfig():
     feature_size = 1
     output_size = 1
 
-    mlModel = LstmAutoencoder(feature_size,4,output_size,2)
+    mlModel = LstmAutoencoderWithCorrector(feature_size,4,output_size,2)
     try:
         mlModel.load_state_dict(torch.load(fileName))
     except:
@@ -38,7 +39,7 @@ def getConfig():
     trainer = RAETrainer(mlModel)
     datasetSeperator = NoSepDataSeperator()
     # logger = PlotLogger()
-    logger = SimpleLogger()
+    logger = PlotLogger()
     dataNormalizer = DataNormalizer()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer
 
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     # dataset, datasetLengths = datasetReader.read()
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
-    skabDataReader, skabDataLengths = skabDataReader.read()
+    # skabDataReader, skabDataLengths = skabDataReader.read()
 
     mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
 

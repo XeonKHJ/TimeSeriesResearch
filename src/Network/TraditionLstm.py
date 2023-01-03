@@ -37,31 +37,6 @@ class TraditionLstm(nn.Module):
         x = self.forwardCalculation(x)
         x = self.finalCalculation(x)
         return x
-    
-    
-    
-    @staticmethod
-    def PadData(dataLists, featureSize):
-        # Sort data first
-        dataLists.sort(key=(lambda elem:len(elem)), reverse=True)
-        dataTimestampLengths = list()
-        for i in range(len(dataLists)):
-            dataTimestampLengths.append(len(dataLists[i]))
-        
-
-        # Padding data
-        longestSeqLength = len(dataLists[0])
-        dataBatchSize = len(dataLists)
-        
-        inputTensor = torch.zeros(dataBatchSize,longestSeqLength, featureSize).int()
-        
-        for i in range(dataBatchSize):
-            currentTimeSeq = 1
-            for j in range(len(dataLists[i])):
-                inputTensor[i][j] = torch.tensor(dataLists[i][j])
-       
-
-        return inputTensor.float(), dataTimestampLengths
 
     def getInputTensor(self, dataset, datasetLengths):
         inputList = torch.split(dataset, 1, 1)

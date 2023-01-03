@@ -30,8 +30,8 @@ class LstmAutoencoderWithCorrector(nn.Module):
 
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
-        x, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
-        x, b = self.lstmDecoder(x)
+        packedEncodedX, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
+        packedEncodedX, b = self.lstmDecoder(x)
         correctX, b = self.lstmCorrector(x)
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
         paddedCorrectX, b = torchrnn.pad_packed_sequence(correctX, batch_first=True)
@@ -41,29 +41,6 @@ class LstmAutoencoderWithCorrector(nn.Module):
         x = self.finalCalculation(x)
 
         return x
-    
-    @staticmethod
-    def PadData(dataLists, featureSize):
-        # Sort data first
-        dataLists.sort(key=(lambda elem:len(elem)), reverse=True)
-        dataTimestampLengths = list()
-        for i in range(len(dataLists)):
-            dataTimestampLengths.append(len(dataLists[i]))
-        
-
-        # Padding data
-        longestSeqLength = len(dataLists[0])
-        dataBatchSize = len(dataLists)
-        
-        inputTensor = torch.zeros(dataBatchSize,longestSeqLength, featureSize).int()
-        
-        for i in range(dataBatchSize):
-            currentTimeSeq = 1
-            for j in range(len(dataLists[i])):
-                inputTensor[i][j] = torch.tensor(dataLists[i][j])
-       
-
-        return inputTensor.float(), dataTimestampLengths
 
     def getInputTensor(self, dataset, datasetLengths):
         inputList = torch.split(dataset, 1, 1)
