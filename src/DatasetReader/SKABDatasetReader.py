@@ -17,8 +17,16 @@ class SKABDatasetReader(IDatasetReader):
         maxDataLength = 0
         for file in fileList:
             filePath = os.path.join(self.folderPath, file)
-            data = pandas.read_csv(filePath)
-            datasetItem = data.value.to_list()
+            data = pandas.read_csv(filePath, sep=';')
+            accelerometer1RMSItem = data.Accelerometer1RMS.to_list()
+            accelerometer2RMS = data.Accelerometer1RMS.to_list()
+            current = data.Current.to_list()
+            pressure = data.Pressure.to_list()
+            temperature = data.Temperature.to_list()
+            thermocouple = data.Thermocouple.to_list()
+            voltage = data.Voltage.to_list()
+            volumeFlowRateRMS = data['Volume Flow RateRMS'].to_list()
+            anomaly = data['anomaly']
             fulldata.append(datasetItem)
             maxDataLength = max(datasetItem.__len__(), maxDataLength)
         fulldata.sort(key=(lambda elem:len(elem)), reverse=True)

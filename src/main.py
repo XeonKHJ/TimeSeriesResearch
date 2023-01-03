@@ -12,7 +12,7 @@ from Network.LstmAutoencoder import LstmAutoencoder
 from Network.OffsetTwowayRNN import OffsetTwowayRNN
 from Network.TraditionLstm import TraditionLstm
 from DatasetReader.NABReader import NABReader
-from DatasetReader.SKABDatasetReader import SKABDataReader
+from DatasetReader.SKABDatasetReader import SKABDatasetReader
 from Network.TwowayRNN import TwowayRNN
 from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
@@ -22,7 +22,7 @@ from Trainers.Trainer import Trainer
 
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
-skabDataReader = SKABDataReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
+skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 fileName = "SavedModels\\rae.pt"
 
 def getConfig():
@@ -46,6 +46,7 @@ if __name__ == '__main__':
     # dataset, datasetLengths = datasetReader.read()
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
+    skabDataReader, skabDataLengths = skabDataReader.read()
 
     mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
 
