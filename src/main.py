@@ -7,19 +7,23 @@ from DataNormalizer.DataNormalizer import DataNormalizer
 from DataNormalizer.NoDataNormalizer import NoDataNormalizer
 from DatasetReader.SmallNABReader import SmallNABReader
 from Logger.PlotLogger import PlotLogger
+from Logger.SimpleLogger import SimpleLogger
 from Network.LstmAutoencoder import LstmAutoencoder
 from Network.OffsetTwowayRNN import OffsetTwowayRNN
 from Network.TraditionLstm import TraditionLstm
 from DatasetReader.NABReader import NABReader
+from DatasetReader.SKABDatasetReader import SKABDataReader
 from Network.TwowayRNN import TwowayRNN
 from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
+from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
 
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
-fileName = "SavedModels\\lstmautoencoder.pt"
+skabDataReader = SKABDataReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
+fileName = "SavedModels\\rae.pt"
 
 def getConfig():
     feature_size = 1
@@ -31,9 +35,10 @@ def getConfig():
     except:
         pass
     
-    trainer = Trainer(mlModel)
+    trainer = RAETrainer(mlModel)
     datasetSeperator = NoSepDataSeperator()
-    logger = PlotLogger()
+    # logger = PlotLogger()
+    logger = SimpleLogger()
     dataNormalizer = DataNormalizer()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer
 
