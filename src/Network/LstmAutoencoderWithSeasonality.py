@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class LstmAutoencoderWithCorrector(nn.Module):
+class LstmAutoencoderWithSeasonality(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -25,10 +25,22 @@ class LstmAutoencoderWithCorrector(nn.Module):
         self.lstmCorrector = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True) 
         self.correctorFowardCal = nn.Linear(hidden_size,output_size)
 
+        # Seasonality in paper Forecasting at scale
+        seasonalityN = 10
+        seasonalityOutputFeatureSize = 10 * 2 + 1
+        self.lstmSeasonality = nn.LSTM(feature_size, seasonalityOutputFeatureSize, num_layers, batch_first=True) 
+
         self.forwardCalculation = nn.Linear(hidden_size,1)
         self.finalCalculation = nn.Sigmoid()
 
+        self.seasonality = torch.zeros([0])
+
     def forward(self, to_x, xTimestampSizes):
+        if self.seasonality.shape == torch.shape([0]):
+            self.seasonality = torch.rand([to_x.shape[0], to_x.shape[1]])
+        
+        torch.tensor([torch.cos(10), torch.sin(10)])
+
         packedX = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         packedEncodedX, b = self.lstmEncoder(packedX)  # _x is input, size (seq_len, batch, input_size)
         packedDncodedX, b = self.lstmDecoder(packedEncodedX)

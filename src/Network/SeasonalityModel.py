@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class LstmAutoencoderWithCorrector(nn.Module):
+class SeasonalityModel(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -18,28 +18,25 @@ class LstmAutoencoderWithCorrector(nn.Module):
         self.feature_size = feature_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-
-        self.lstmEncoder = nn.LSTM(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
-        self.lstmDecoder = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True) 
-        
-        self.lstmCorrector = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True) 
-        self.correctorFowardCal = nn.Linear(hidden_size,output_size)
+        # Seasonality in paper Forecasting at scale
+        self.seasonalityN = 10
+        seasonalityOutputFeatureSize = 10 * 2 + 1
+        self.lstmSeasonality = nn.LSTM(input_size = feature_size, hidden_size = seasonalityOutputFeatureSize, num_layers = num_layers, batch_first=True) 
 
         self.forwardCalculation = nn.Linear(hidden_size,1)
         self.finalCalculation = nn.Sigmoid()
 
-    def forward(self, to_x, xTimestampSizes):
-        packedX = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
-        packedEncodedX, b = self.lstmEncoder(packedX)  # _x is input, size (seq_len, batch, input_size)
-        packedDncodedX, b = self.lstmDecoder(packedEncodedX)
+        self.seasonality = torch.zeros([0])
 
-        packedCorrectX, b = self.lstmCorrector(packedX)
-        paddedX, lengths = torchrnn.pad_packed_sequence(packedDncodedX, batch_first=True)
-        paddedCorrectX, b = torchrnn.pad_packed_sequence(packedCorrectX, batch_first=True)
-        x = self.forwardCalculation(paddedX)
-        correctX = self.correctorFowardCal(paddedCorrectX)
-        paddedX = x + correctX
-        x = self.finalCalculation(paddedX)
+    def forward(self, to_x, xTimestampSizes):
+        if self.seasonality.shape == torch.Size([0]):
+            self.inputShape = to_x.shape[1]
+            # self.seasonality = torch.rand([to_x.shape[0], to_x.shape[1]])
+
+        packedX = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
+        packedSeasonalityX, b = self.lstmSeasonality(packedX)
+        paddedSeasonalityX, seasonalityXLengthes = torchrnn.pad_packed_sequence(packedSeasonalityX, batch_first=True)
+        seasonalityMatrix = 12
 
         return x
 

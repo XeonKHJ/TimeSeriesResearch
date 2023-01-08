@@ -1,8 +1,5 @@
 import torch
 import torch.nn
-import numpy
-import matplotlib.pyplot
-import math
 from DataNormalizer.DataNormalizer import DataNormalizer
 from DataNormalizer.NoDataNormalizer import NoDataNormalizer
 from DatasetReader.SmallNABReader import SmallNABReader
@@ -18,25 +15,26 @@ from Network.TwowayRNN import TwowayRNN
 from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
+from Network.SeasonalityModel import SeasonalityModel
 from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
 
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
-skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
-fileName = "SavedModels\\rae.pt"
+# skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
+fileName = "SavedModels\\lstmwithcorrector.pt"
 
 def getConfig():
     feature_size = 1
     output_size = 1
 
-    mlModel = LstmAutoencoderWithCorrector(feature_size,4,output_size,2)
+    mlModel = SeasonalityModel(feature_size,4,output_size,2)
     try:
         mlModel.load_state_dict(torch.load(fileName))
     except:
         pass
     
-    trainer = RAETrainer(mlModel)
+    trainer = Trainer(mlModel)
     datasetSeperator = NoSepDataSeperator()
     # logger = PlotLogger()
     logger = PlotLogger()
