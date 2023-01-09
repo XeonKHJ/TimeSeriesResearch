@@ -22,8 +22,8 @@ class SeasonalityModel(nn.Module):
         self.output_size = output_size
         self.num_layers = num_layers
         # Seasonality in paper Forecasting at scale
-        self.seasonalityN = 10
-        seasonalityOutputFeatureSize = 10 * 2 + 1
+        self.seasonalityN = 3
+        seasonalityOutputFeatureSize = self.seasonalityN * 2 + 1 + 1 + 1
         self.lstmSeasonality = nn.LSTM(
             input_size=feature_size, hidden_size=seasonalityOutputFeatureSize, num_layers=num_layers, batch_first=True)
 
@@ -44,25 +44,26 @@ class SeasonalityModel(nn.Module):
         seasonalityMatrix = 12
         seasonalityX = paddedSeasonalityX[:,
                                           paddedSeasonalityX.shape[1] - 1, :]
-        seasonalityABMatrix = seasonalityX[:, 0:20].reshape([1, 20])
-        seasonalityPs = seasonalityX[:,20]
-        seasnalityNs = torch.arange(1, self.seasonalityN, 1)
-        
-        
+        # seasonalityABMatrix = [a1,a2,a3,...,aN,b1,b2,...,bN]
+        seasonalityABMatrix = seasonalityX[:, 0:2 * self.seasonalityN]
+        seasonalityPs = seasonalityX[:,self.seasonalityN]
+        seasonalityPs = seasonalityPs.reshape([seasonalityPs.shape[0],1])
+        seasonalityPs = seasonalityPs.repeat(1,self.seasonalityN)
+        seasonalityNs = torch.arange(1, self.seasonalityN + 1, 1) * 2 * torch.pi
+        seasonalityNs = seasonalityNs.repeat(paddedSeasonalityX.shape[0], 1)
+        seasonalitySequence = seasonalityNs * seasonalityPs
 
-        # Create a tensor cos(2πnt)/p
-        ## Create a time sequence tensor [1,2,3,4,...,datalength]
-        sequenceTensor = torch.arange(0.0, paddedSeasonalityX.shape[1], 1.0).reshape([1,-1])
-        ## Create 2*π*p
-        seasonality2piN = seasonalityX[:,20].reshape([-1,1]) * 2 * torch.pi
-        tempx =  torch.mm(seasonality2piN,sequenceTensor)
-        cosMatrix = torch.cos(tempx)
-        sinMatrix = torch.sin(tempx)
-        torch.concat(cosMatrix, sinMatrix)
-
-        torch.mm(seasonalityABMatrix, cosMatrix)
+        outputX = torch.zeros(to_x.shape)
+        for i in range(paddedSeasonalityX.shape[1]):
+            currentT = i + 1
+            twopipt = currentT * seasonalitySequence
+            coses = torch.cos(twopipt)
+            sins = torch.sin(twopipt)
+            cossinMatrix = torch.concat((coses,sins), 1)
+            abcossinMatrix = seasonalityABMatrix * cossinMatrix
+            outputX[:,i] = seasonalityX[:,2 * self.seasonalityN + 2].reshape([-1,1]) * abcossinMatrix.sum(1).reshape([-1,1]) + seasonalityX[:,2 * self.seasonalityN + 1].reshape([-1,1])
         
-        seasonX = sequenceTensor.dot(cossinMatrix)
+        x = outputX
         return x
 
     def getInputTensor(self, dataset, datasetLengths):

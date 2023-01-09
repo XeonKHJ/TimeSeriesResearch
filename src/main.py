@@ -22,7 +22,7 @@ from Trainers.Trainer import Trainer
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
-fileName = "SavedModels\\lstmwithcorrector.pt"
+fileName = "SavedModels\\seasonality.pt"
 
 def getConfig():
     feature_size = 1
