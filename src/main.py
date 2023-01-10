@@ -1,5 +1,6 @@
 import torch
 import torch.nn
+from Network.CUDASeasonalityLstmAutoencoder import CUDASeasonalityLstmAutoencoder
 from DataNormalizer.DataNormalizer import DataNormalizer
 from DataNormalizer.NoDataNormalizer import NoDataNormalizer
 from DatasetReader.SmallNABReader import SmallNABReader
@@ -29,7 +30,7 @@ def getConfig():
     feature_size = 1
     output_size = 1
 
-    mlModel = SeasonalityLstmAutoencoder(feature_size,4,output_size,2)
+    mlModel = CUDASeasonalityLstmAutoencoder(feature_size,4,output_size,2).cuda()
     try:
         mlModel.load_state_dict(torch.load(fileName))
     except:
@@ -48,13 +49,15 @@ if __name__ == '__main__':
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
     # skabDataReader, skabDataLengths = skabDataReader.read()
 
-    mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
+    isLoggerEnable = False
+    
 
+    mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
+    
     dataNormalizer.addDatasetToRef(normalDataset)
     dataNormalizer.addDatasetToRef(abnormalDataset)
     normalDataset = dataNormalizer.normalizeDataset(normalDataset)
     abnormalDataset = dataNormalizer.normalizeDataset(abnormalDataset)
-
     trainDataset = datasetSeperator.getTrainningSet(normalDataset)
     trainsetLengths = datasetSeperator.getTrainningSet(normalDatasetLengths)
 
@@ -79,22 +82,23 @@ if __name__ == '__main__':
         labelSet = labelDataset[startIdx:endIdx]
         labelSetLengths = labelDatasetLengths[startIdx:endIdx]
         loss = trainer.train(trainSet, labelSetLengths, labelSet)
+        print("epoch\t",epoch,"\tloss\t", loss.item())
+        if epoch % 100 == 0:
+            if isLoggerEnable:
+                mlModel.eval()
+                validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
+                abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
+                anaOutput = mlModel(validInput, validLengthes)
+                anaAbnormalOutput = mlModel(abInput, abLengths)
+                print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
+                x = validOutput[1].reshape([-1]).tolist()
+                px = anaOutput[1].reshape([-1]).tolist()
 
-        if epoch % 10 == 0:
-            mlModel.eval()
-            validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
-            abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
-            anaOutput = mlModel(validInput, validLengthes)
-            anaAbnormalOutput = mlModel(abInput, abLengths)
-            print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
-            x = validOutput[1].reshape([-1]).tolist()
-            px = anaOutput[1].reshape([-1]).tolist()
-
-            abx = abOutput[1].reshape([-1]).tolist()
-            abpx = anaAbnormalOutput[1].reshape([-1]).tolist()
-
-            logger.logResult(x, px)
-            logger.logResult(abx, abpx)
+                abx = abOutput[3].reshape([-1]).tolist()
+                abpx = anaAbnormalOutput[3].reshape([-1]).tolist()
+                logger.logResult(abx, [])
+                logger.logResult(x, px)
+                logger.logResult(abx, abpx)
             torch.save(mlModel.state_dict(), fileName)
             mlModel.train()
         epoch += 1
