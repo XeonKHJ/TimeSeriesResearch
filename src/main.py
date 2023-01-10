@@ -16,19 +16,20 @@ from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 from Network.SeasonalityModel import SeasonalityModel
+from Network.SeasonalityLstmAutoencoder import SeasonalityLstmAutoencoder
 from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
 
 normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
 abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
-fileName = "SavedModels\\seasonality.pt"
+fileName = "SavedModels\\seasonalityAutoencoder.pt"
 
 def getConfig():
     feature_size = 1
     output_size = 1
 
-    mlModel = SeasonalityModel(feature_size,4,output_size,2)
+    mlModel = SeasonalityLstmAutoencoder(feature_size,4,output_size,2)
     try:
         mlModel.load_state_dict(torch.load(fileName))
     except:
@@ -79,7 +80,7 @@ if __name__ == '__main__':
         labelSetLengths = labelDatasetLengths[startIdx:endIdx]
         loss = trainer.train(trainSet, labelSetLengths, labelSet)
 
-        if epoch % 2 == 0:
+        if epoch % 10 == 0:
             mlModel.eval()
             validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
             abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
