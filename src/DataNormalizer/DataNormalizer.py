@@ -4,13 +4,20 @@ import sys
 
 class DataNormalizer(IDataNormalizer):
     def __init__(self):
-        self.max = sys.float_info.min
-        self.min = sys.float_info.max
+        self.max = None
+        self.min = None
         pass
 
     def addDatasetToRef(self, dataset):
-        self.max = max(self.max, torch.max(dataset))
-        self.min = min(self.min, torch.min(dataset))
+        if self.max == None:
+            self.max = torch.max(dataset)
+        else:
+            self.max = max(self.max, torch.max(dataset))
+        
+        if self.min == None:
+            self.min = torch.min(dataset)
+        else:
+            self.min = min(self.min, torch.min(dataset))
         return
 
     def normalizeDataset(self, dataset):

@@ -20,10 +20,10 @@ from Network.SeasonalityLstmAutoencoder import SeasonalityLstmAutoencoder
 from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
 
-normalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialNoAnomaly\\artificialNoAnomaly")
-abnormalDataReader = NABReader("C:\\Users\\redal\\source\\repos\\TimeSeriesResearch\\datasets\\preprocessed\\NAB\\artificialWithAnomaly\\artificialWithAnomaly")
+normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
+abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
-fileName = "SavedModels\\seasonalityAutoencoder.pt"
+fileName = "SavedModels/seasonalityAutoencoder.pt"
 
 def getConfig():
     feature_size = 1
