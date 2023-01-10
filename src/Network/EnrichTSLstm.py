@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class LstmAutoencoder(nn.Module):
+class EnrichTSLstm(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -26,10 +26,10 @@ class LstmAutoencoder(nn.Module):
         self.finalCalculation = nn.Sigmoid()
 
     def forward(self, to_x, xTimestampSizes):
+        x = self.enrichTimeSeries(to_x)
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
         x, b = self.lstmDecoder(x)
-
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
         x = self.forwardCalculation(x)
@@ -57,9 +57,19 @@ class LstmAutoencoder(nn.Module):
         step = 2 
         curIdx = 0
         gTimeLengths = (2 * data.shape[1] - b)
-        gTensor = torch.tensor(data.shape[0], data.shape[1] - 1, data.shape[2])
+        
+        # tensor shape [batch size, data length, nor and don]
+        gTensor = torch.tensor(data.shape[0], data.shape[1] - 1, 2)
         gTensorItem = torch.zeros([4])
         data[:,curIdx:windowSize,:]
-        prenor = nor
-        nor = torch.norm(data[:,curIdx:windowSize,:])
-        don = prenor - nor
+        prenor = None
+        while True:
+            prenor = nor
+            nor = torch.norm(data[:,curIdx:windowSize,:])
+            don = prenor - nor
+            
+            
+
+        # step 2
+        hTensor = torch.zeros([data.shape[0], hLength, 10])
+        
