@@ -59,3 +59,6 @@ class CUDASeasonalityLstmAutoencoder(nn.Module):
             for j in range(outputDataset.shape[0]):
                 inputDataset[j][i] = inputList[i][j]
         return inputDataset.cuda(), outputDataset.cuda(), inputLengths
+
+    def getName(self):
+        return "SeasonalityLstmAutoencoder"

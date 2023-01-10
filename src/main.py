@@ -1,5 +1,6 @@
 import torch
 import torch.nn
+import os.path as path
 from Network.CUDASeasonalityLstmAutoencoder import CUDASeasonalityLstmAutoencoder
 from DataNormalizer.DataNormalizer import DataNormalizer
 from DataNormalizer.NoDataNormalizer import NoDataNormalizer
@@ -24,7 +25,7 @@ from Trainers.Trainer import Trainer
 normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
 abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
-fileName = "SavedModels/seasonalityAutoencoder.pt"
+modelFolderPath = "SavedModels"
 
 def getConfig():
     feature_size = 1
@@ -32,7 +33,7 @@ def getConfig():
 
     mlModel = CUDASeasonalityLstmAutoencoder(feature_size,4,output_size,2).cuda()
     try:
-        mlModel.load_state_dict(torch.load(fileName))
+        mlModel.load_state_dict(torch.load(path.join(modelFolderPath, mlModel.getName() + ".pt")))
     except:
         pass
     
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
     # skabDataReader, skabDataLengths = skabDataReader.read()
 
-    isLoggerEnable = False
+    isLoggerEnable = True
     
 
     mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
@@ -99,6 +100,6 @@ if __name__ == '__main__':
                 logger.logResult(abx, [])
                 logger.logResult(x, px)
                 logger.logResult(abx, abpx)
-            torch.save(mlModel.state_dict(), fileName)
+            torch.save(mlModel.state_dict(), path.join(modelFolderPath, mlModel.getName() + ".pt"))
             mlModel.train()
         epoch += 1
