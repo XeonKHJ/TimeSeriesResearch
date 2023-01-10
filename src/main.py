@@ -1,6 +1,7 @@
 import torch
 import torch.nn
 import os.path as path
+from Network.CUDASeasonalityModel import CUDASeasonalityModel
 from Network.CUDASeasonalityLstmAutoencoder import CUDASeasonalityLstmAutoencoder
 from DataNormalizer.DataNormalizer import DataNormalizer
 from DataNormalizer.NoDataNormalizer import NoDataNormalizer
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
     # skabDataReader, skabDataLengths = skabDataReader.read()
 
-    isLoggerEnable = True
+    isLoggerEnable = False
     
 
     mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
@@ -95,8 +96,8 @@ if __name__ == '__main__':
                 x = validOutput[1].reshape([-1]).tolist()
                 px = anaOutput[1].reshape([-1]).tolist()
 
-                abx = abOutput[3].reshape([-1]).tolist()
-                abpx = anaAbnormalOutput[3].reshape([-1]).tolist()
+                abx = abOutput[0].reshape([-1]).tolist()
+                abpx = anaAbnormalOutput[0].reshape([-1]).tolist()
                 logger.logResult(abx, [])
                 logger.logResult(x, px)
                 logger.logResult(abx, abpx)
