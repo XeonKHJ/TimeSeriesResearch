@@ -5,7 +5,7 @@ class Trainer(ITrainer):
     def __init__(self, model):
         self.mlModel = model
         self.lossFunc = torch.nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.mlModel.parameters(), lr=1e-2)
+        self.optimizer = torch.optim.Adam(self.mlModel.parameters(), lr=1e-5)
 
     def train(self, trainSet, trainSetLength, labelSet):
         output = self.mlModel(trainSet, trainSetLength)
