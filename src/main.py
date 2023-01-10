@@ -1,6 +1,8 @@
 import torch
 import torch.nn
 import os.path as path
+from Network.CUDAEnrichTSLstm import CUDAEnrichTSLstm
+from Network.EnrichTSLstm import EnrichTSLstm
 from Network.CUDASeasonalityModel import CUDASeasonalityModel
 from Network.CUDASeasonalityLstmAutoencoder import CUDASeasonalityLstmAutoencoder
 from DataNormalizer.DataNormalizer import DataNormalizer
@@ -32,7 +34,7 @@ def getConfig():
     feature_size = 1
     output_size = 1
 
-    mlModel = CUDASeasonalityLstmAutoencoder(feature_size,4,output_size,2).cuda()
+    mlModel = CUDAEnrichTSLstm(feature_size,4,output_size,2).cuda()
     try:
         mlModel.load_state_dict(torch.load(path.join(modelFolderPath, mlModel.getName() + ".pt")))
     except:

@@ -5,11 +5,9 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class EnrichTSLstm(nn.Module):
+class CUDAEnrichTSLstm(nn.Module):
     """
-        Implementation of the paper Outlier Detection for Multidimensional Time Series using Deep Neural Networks.
-        
-        Parameters:
+        Parameters：
         - input_size: feature size
         - hidden_size: number of hidden units
         - output_size: number of output
@@ -25,7 +23,7 @@ class EnrichTSLstm(nn.Module):
         self.lstmDecoder = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True) 
         
         self.forwardCalculation = nn.Linear(hidden_size,enrichedSize)
-        self.finalCalculation = nn.Sigmoid()
+        # self.finalCalculation = nn.Sigmoid()
 
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
@@ -34,13 +32,13 @@ class EnrichTSLstm(nn.Module):
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
         x = self.forwardCalculation(x)
-        x = self.finalCalculation(x)
+        # x = self.finalCalculation(x)
 
         return x
 
     def getInputTensor(self, dataset, datasetLengths):
         enrichedData, enrichedDataLengthes = self.enrichTimeSeries(dataset)
-        return enrichedData, enrichedData, enrichedDataLengthes
+        return enrichedData.cuda(), enrichedData.cuda(), enrichedDataLengthes
 
     def enrichTimeSeries(self, data):
         gWindowSize = 4
