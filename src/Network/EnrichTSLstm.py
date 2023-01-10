@@ -18,15 +18,14 @@ class EnrichTSLstm(nn.Module):
         self.feature_size = feature_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-
-        self.lstmEncoder = nn.LSTM(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
+        enrichedSize = 6
+        self.lstmEncoder = nn.LSTM(enrichedSize, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
         self.lstmDecoder = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True) 
         
-        self.forwardCalculation = nn.Linear(hidden_size,output_size)
+        self.forwardCalculation = nn.Linear(hidden_size,enrichedSize)
         self.finalCalculation = nn.Sigmoid()
 
     def forward(self, to_x, xTimestampSizes):
-        x = self.enrichTimeSeries(to_x)
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
         x, b = self.lstmDecoder(x)
@@ -38,38 +37,44 @@ class EnrichTSLstm(nn.Module):
         return x
 
     def getInputTensor(self, dataset, datasetLengths):
-        inputList = torch.split(dataset, 1, 1)
-        inputLengths = (numpy.array(datasetLengths)).tolist()
-        outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1] , dataset.shape[2]])
-        inputDataset = torch.zeros([dataset.shape[0], dataset.shape[1], dataset.shape[2]])
-        for i in range(inputList.__len__()):
-            for j in range(outputDataset.shape[0]):
-                outputDataset[j][i] = inputList[i][j]
-
-        for i in range(inputList.__len__()):
-            for j in range(outputDataset.shape[0]):
-                inputDataset[j][i] = inputList[i][j]
-        return inputDataset, outputDataset, inputLengths
+        enrichedData, enrichedDataLengthes = self.enrichTimeSeries(dataset)
+        return enrichedData, enrichedData, enrichedDataLengthes
 
     def enrichTimeSeries(self, data):
-        b = 4
-        windowSize = 4
-        step = 2 
+        gWindowSize = 4
+        gStep = int(gWindowSize / 2) 
         curIdx = 0
-        gTimeLengths = (2 * data.shape[1] - b)
-        
+        # gTimeLengths represents C' in the paper.
+        gTimeLengths = int((2 * data.shape[1] - gWindowSize) / gWindowSize)
         # tensor shape [batch size, data length, nor and don]
-        gTensor = torch.tensor(data.shape[0], data.shape[1] - 1, 2)
-        gTensorItem = torch.zeros([4])
-        data[:,curIdx:windowSize,:]
-        prenor = None
-        while True:
-            prenor = nor
-            nor = torch.norm(data[:,curIdx:windowSize,:])
-            don = prenor - nor
-            
-            
+        gTensor = torch.zeros([data.shape[0], gTimeLengths, 2])
 
+        prenor = None
+        for idx in range(gTimeLengths):
+            nor = torch.norm(data[:,curIdx:curIdx + gWindowSize,:], dim=1)
+            if prenor != None:
+                don = prenor - nor
+                gTensor[:,idx,0] = nor.reshape([-1])
+                gTensor[:,idx,1] = don.reshape([-1])
+            curIdx += gStep
+            prenor = nor
+ 
         # step 2
-        hTensor = torch.zeros([data.shape[0], hLength, 10])
-        
+        # f in the paper
+        hWindowSize = 2
+        hStep = int(hWindowSize / 2)
+        hTimeLengths = int((2 * gTimeLengths - hWindowSize) / hWindowSize)
+        hTensor = torch.zeros([data.shape[0], hTimeLengths, 6])
+        for idx in range(hTimeLengths):
+            hTensor[:,idx,0] = torch.mean(gTensor[:,idx:idx+hWindowSize,0], 1)
+            hTensor[:,idx,1] = torch.min(gTensor[:,idx:idx+hWindowSize,0], 1).values
+            hTensor[:,idx,2] = torch.max(gTensor[:,idx:idx+hWindowSize,0], 1).values
+            hTensor[:,idx,3] = torch.mean(gTensor[:,idx:idx+hWindowSize,1], 1)
+            hTensor[:,idx,4] = torch.min(gTensor[:,idx:idx+hWindowSize,1], 1).values
+            hTensor[:,idx,5] = torch.max(gTensor[:,idx:idx+hWindowSize,1], 1).values
+        lengthTensor = torch.zeros([data.shape[0]])
+        lengthTensor[:] = hTimeLengths
+        return hTensor, lengthTensor.int().tolist()
+    
+    def getName(self):
+        return "EnrichTLstm"
