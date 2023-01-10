@@ -7,7 +7,9 @@ import numpy
 
 class EnrichTSLstm(nn.Module):
     """
-        Parameters：
+        Implementation of the paper Outlier Detection for Multidimensional Time Series using Deep Neural Networks.
+        
+        Parameters:
         - input_size: feature size
         - hidden_size: number of hidden units
         - output_size: number of output
