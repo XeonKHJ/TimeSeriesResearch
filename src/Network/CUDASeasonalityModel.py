@@ -23,8 +23,10 @@ class CUDASeasonalityModel(nn.Module):
         self.output_size = output_size
         self.num_layers = num_layers
         # Seasonality in paper Forecasting at scale
-        self.seasonalityN = 3
-        seasonalityOutputFeatureSize = self.seasonalityN * 2 + 1
+        self.seasonalityN = 10
+        
+        # with addtion P and bias
+        seasonalityOutputFeatureSize = self.seasonalityN * 2 + 1 + 1
         self.lstmSeasonality = nn.LSTM(
             input_size=feature_size, hidden_size=seasonalityOutputFeatureSize, num_layers=num_layers, batch_first=True)
 
@@ -64,7 +66,8 @@ class CUDASeasonalityModel(nn.Module):
         tempcossinMat = torch.cat((tempcoses, tempsins), 1)
         tempabMatrix = seasonalityABMatrix.reshape([to_x.shape[0],2*self.seasonalityN,1]).repeat(1,1,4032)
         tempoutx = tempabMatrix * tempcossinMat
-        tempoutx = tempoutx.sum(1).reshape([tempoutx.shape[0], tempoutx.shape[2], 1])
+        tempoutx = tempoutx.sum(1) + seasonalityX[:,2*self.seasonalityN+1].reshape(to_x.shape[0],1).repeat(1,to_x.shape[1])
+        tempoutx = tempoutx.reshape([tempoutx.shape[0], tempoutx.shape[1], 1])
         return tempoutx
 
     def getInputTensor(self, dataset, datasetLengths):
