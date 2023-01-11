@@ -25,6 +25,8 @@ from Network.SeasonalityLstmAutoencoder import SeasonalityLstmAutoencoder
 from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
 
+import ArgParser
+
 normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
 abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
@@ -34,7 +36,7 @@ def getConfig():
     feature_size = 1
     output_size = 1
 
-    mlModel = CUDAEnrichTSLstm(feature_size,4,output_size,2).cuda()
+    mlModel = EnrichTSLstm(feature_size,4,output_size,2)
     try:
         mlModel.load_state_dict(torch.load(path.join(modelFolderPath, mlModel.getName() + ".pt")))
     except:
@@ -48,12 +50,14 @@ def getConfig():
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer
 
 if __name__ == '__main__':
+
+    args = ArgParser.getArgs()
+    isLoggerEnable = not (args.disablePlot)
+
     # dataset, datasetLengths = datasetReader.read()
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
     # skabDataReader, skabDataLengths = skabDataReader.read()
-
-    isLoggerEnable = False
     
 
     mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
@@ -86,7 +90,7 @@ if __name__ == '__main__':
         labelSet = labelDataset[startIdx:endIdx]
         labelSetLengths = labelDatasetLengths[startIdx:endIdx]
         loss = trainer.train(trainSet, labelSetLengths, labelSet)
-        print("epoch\t",epoch,"\tloss\t", loss.item())
+
         if epoch % 100 == 0:
             if isLoggerEnable:
                 mlModel.eval()
