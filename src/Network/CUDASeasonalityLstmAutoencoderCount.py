@@ -33,7 +33,7 @@ class CUDASeasonalityLstmAutoencoderCount(nn.Module):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, (hiddenOutputX, cellStatesX) = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
         paddedX, paddedXLengthes = torchrnn.pad_packed_sequence(x, True)
-        paddedX = paddedX[self.num_layers-1,to_x.shape[1]-self.reserveLengthForDecode:to_x.shape[1],:]
+        paddedX = paddedX[:,to_x.shape[1]-self.reserveLengthForDecode:to_x.shape[1],:]
         repeatedXZeros = torch.zeros([to_x.shape[0], to_x.shape[1], self.seasonalityN]).cuda()
         repeatedXZeros[:,0:self.reserveLengthForDecode,:] = paddedX
         # repeatedX = paddedX.repeat([1,to_x.shape[1]]).reshape([paddedX.shape[0], -1, self.seasonalityN])
