@@ -13,11 +13,11 @@ class StandardScalerDataNormalizer(IDataNormalizer):
 
     def normalizeDataset(self, dataset):
         beginDataTensor = None
-        for dataset in self.datas:
+        for d in self.datas:
             if beginDataTensor == None:
-                beginDataTensor = dataset[:]
+                beginDataTensor = d[:]
             else:
-                beginDataTensor = torch.cat((beginDataTensor, dataset), 0)
+                beginDataTensor = torch.cat((beginDataTensor, d), 0)
         mean = torch.mean(beginDataTensor)
         std = torch.std(beginDataTensor)
         dataset = (dataset - mean) / std
