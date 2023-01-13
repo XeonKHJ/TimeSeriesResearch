@@ -30,7 +30,7 @@ class CUDASeasonalityModel(nn.Module):
         self.lstmSeasonality = nn.LSTM(
             input_size=feature_size, hidden_size=seasonalityOutputFeatureSize, num_layers=num_layers, batch_first=True)
 
-        # self.forwardCalculation = nn.Linear(hidden_size, 1)
+        self.forwardCalculation = nn.Linear(seasonalityOutputFeatureSize, seasonalityOutputFeatureSize)
         # self.finalCalculation = nn.Sigmoid()
 
         self.seasonality = torch.zeros([0])
@@ -47,6 +47,7 @@ class CUDASeasonalityModel(nn.Module):
         seasonalityMatrix = 12
         seasonalityX = paddedSeasonalityX[:,
                                           paddedSeasonalityX.shape[1] - 1, :]
+        seasonalityX = self.forwardCalculation(seasonalityX)
         # seasonalityABMatrix = [a1,a2,a3,...,aN,b1,b2,...,bN]
         seasonalityABMatrix = seasonalityX[:, 0:2 * self.seasonalityN]
         seasonalityPs = seasonalityX[:,self.seasonalityN]
