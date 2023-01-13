@@ -60,4 +60,4 @@ class GithubRnnLstmAutoencoder(nn.Module):
         for i in range(inputList.__len__()):
             for j in range(outputDataset.shape[0]):
                 inputDataset[j][i] = inputList[i][j]
-        return inputDataset, outputDataset, inputLengths
+        return inputDataset.cuda(), outputDataset.cuda(), inputLengths
