@@ -28,7 +28,7 @@ class CUDAGruAutoencoder(nn.Module):
         self.lstmDecoder = nn.GRU(self.seasonalityN, hidden_size, num_layers, batch_first=True) 
         
         self.forwardCalculation = nn.Linear(hidden_size,output_size)
-        # self.finalCalculation = nn.Sigmoid()
+        self.finalCalculation = nn.Sigmoid()
 
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
@@ -45,7 +45,7 @@ class CUDAGruAutoencoder(nn.Module):
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
 
         x = self.forwardCalculation(x)
-        # x = self.finalCalculation(x)
+        x = self.finalCalculation(x)
 
         return x
 
