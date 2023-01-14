@@ -24,6 +24,8 @@ class GithubGruAutoencoder(nn.Module):
         self.fc2 = nn.Linear(encoder_dim, hidden_dim)
         self.lstm2 = nn.GRU(hidden_dim, output_size, n_layers, dropout=dropout,
                              batch_first=True)
+        self.finalCal = nn.Linear(output_size, output_size)
+        self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, to_x, xTimestampSizes):
@@ -42,7 +44,8 @@ class GithubGruAutoencoder(nn.Module):
         packed_enc = torchrnn.pack_padded_sequence(enc, xTimestampSizes, True)
         lstm_enc, (hidden2, _) = self.lstm2(packed_enc)
         padded_lstm_enc, _ = torchrnn.pad_packed_sequence(lstm_enc, True)
-
+        padded_lstm_enc = self.finalCal(padded_lstm_enc)
+        padded_lstm_enc = self.sigmoid(padded_lstm_enc)
         return padded_lstm_enc
 
     def getName(self):
