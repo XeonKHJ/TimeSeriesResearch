@@ -24,6 +24,7 @@ class LstmAutoencoder(nn.Module):
         
         self.forwardCalculation = nn.Linear(hidden_size,output_size)
         self.finalCalculation = nn.Sigmoid()
+        self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
@@ -49,4 +50,11 @@ class LstmAutoencoder(nn.Module):
         for i in range(inputList.__len__()):
             for j in range(outputDataset.shape[0]):
                 inputDataset[j][i] = inputList[i][j]
-        return inputDataset, outputDataset, inputLengths
+
+        if self.isCudaSupported:
+            return inputDataset.cuda(), outputDataset.cuda(), inputLengths
+        else:
+            return inputDataset, outputDataset, inputLengths
+
+    def getName(self):
+        return "LstmAutoencoder"
