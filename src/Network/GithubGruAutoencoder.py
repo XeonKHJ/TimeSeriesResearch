@@ -34,12 +34,12 @@ class GithubGruAutoencoder(nn.Module):
         # decode
         lstm_dec, (hidden1, _) = self.lstm1(x)
         lstm_dec, _ = torchrnn.pad_packed_sequence(lstm_dec, batch_first=True)
-        dec = self.dropout(lstm_dec)
-        dec = F.relu(self.fc1(dec))
+        # dec = self.dropout(lstm_dec)
+        dec = F.relu(self.fc1(lstm_dec))
 
         # encode
         enc = F.relu(self.fc2(dec))
-        enc = self.dropout(enc)
+        #enc = self.dropout(enc)
 
         packed_enc = torchrnn.pack_padded_sequence(enc, xTimestampSizes, True)
         lstm_enc, (hidden2, _) = self.lstm2(packed_enc)
