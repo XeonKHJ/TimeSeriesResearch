@@ -1,29 +1,20 @@
 import torch
 import torch.nn
 import os.path as path
-from Network.CUDAEnrichTSLstm import CUDAEnrichTSLstm
-from Network.EnrichTSLstm import EnrichTSLstm
-from Network.CUDASeasonalityModel import CUDASeasonalityModel
-from Network.CUDASeasonalityLstmAutoencoder import CUDASeasonalityLstmAutoencoder
-from DataNormalizer.DataNormalizer import DataNormalizer
-from DataNormalizer.NoDataNormalizer import NoDataNormalizer
-from DatasetReader.SmallNABReader import SmallNABReader
-from Logger.PlotLogger import PlotLogger
-from Logger.SimpleLogger import SimpleLogger
-from Network.LstmAutoencoderWithCorrector import LstmAutoencoderWithCorrector
-from Network.LstmAutoencoder import LstmAutoencoder
-from Network.OffsetTwowayRNN import OffsetTwowayRNN
-from Network.TraditionLstm import TraditionLstm
-from DatasetReader.NABReader import NABReader
-from DatasetReader.SKABDatasetReader import SKABDatasetReader
-from Network.TwowayRNN import TwowayRNN
-from Network.OffsetBiLstmAutoencoder import OffsetBiLstmAutoencoder
 
-from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
-from Network.SeasonalityModel import SeasonalityModel
-from Network.SeasonalityLstmAutoencoder import SeasonalityLstmAutoencoder
+from Network.LstmAutoencoder import LstmAutoencoder
+
 from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
+
+from DataNormalizer.DataNormalizer import DataNormalizer
+
+from DatasetReader.NABReader import NABReader
+from DatasetReader.SingleNABDataReader import SingleNABDataReader
+
+from Logger.PlotLogger import PlotLogger
+
+from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 
 import ArgParser
 
@@ -35,17 +26,18 @@ modelFolderPath = "SavedModels"
 def getConfig():
     feature_size = 1
     output_size = 1
-
-    mlModel = EnrichTSLstm(feature_size,4,output_size,2)
+    logger = PlotLogger()
+    mlModel = LstmAutoencoder(feature_size,4,output_size,2)
     try:
         mlModel.load_state_dict(torch.load(path.join(modelFolderPath, mlModel.getName() + ".pt")))
     except:
         pass
-    
-    trainer = Trainer(mlModel)
+    if torch.cuda.is_available():
+        mlModel.cuda()
+    trainer = RAETrainer(mlModel, logger)
     datasetSeperator = NoSepDataSeperator()
     # logger = PlotLogger()
-    logger = PlotLogger()
+    
     dataNormalizer = DataNormalizer()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer
 
@@ -104,7 +96,7 @@ if __name__ == '__main__':
 
                 abx = abOutput[0].reshape([-1]).tolist()
                 abpx = anaAbnormalOutput[0].reshape([-1]).tolist()
-                logger.logResult(abx, [])
+                # logger.logResult(abx, [])
                 logger.logResult(x, px)
                 logger.logResult(abx, abpx)
             torch.save(mlModel.state_dict(), path.join(modelFolderPath, mlModel.getName() + ".pt"))
