@@ -1,11 +1,13 @@
 import torch
 import torch.nn
 import os.path as path
+from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
 
 
 from TaskConfig.RAETaskConfig import RAETaskConfig
 from DatasetReader.NABReader import NABReader
 import ArgParser
+from Trainers.CorrectorTrainer import CorrectorTrainer
 
 normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
 abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
@@ -13,8 +15,15 @@ abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnoma
 modelFolderPath = "SavedModels"
 
 config = RAETaskConfig(modelFolderPath)
+correctTaskConfig = None
 def getConfig():
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
+    return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
+
+def getCorrectorConfig(detectModel):
+    global correctTaskConfig
+    correctTaskConfig = CorrectTaskConfig(modelFolderPath, detectModel)
+    mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = correctTaskConfig.getConfig()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
 
 def logEvalModel(mlModel):
@@ -51,7 +60,7 @@ if __name__ == '__main__':
     
 
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = getConfig()
-    
+    correctorModel, _, correctorTrainer, _, _, correctorTaskName = getCorrectorConfig(mlModel)
     dataNormalizer.addDatasetToRef(normalDataset)
     dataNormalizer.addDatasetToRef(abnormalDataset)
     normalDataset = dataNormalizer.normalizeDataset(normalDataset)
@@ -79,7 +88,10 @@ if __name__ == '__main__':
         trainSet = toTrainDataset[startIdx:endIdx]
         labelSet = labelDataset[startIdx:endIdx]
         labelSetLengths = labelDatasetLengths[startIdx:endIdx]
-        loss = trainer.train(trainSet, labelSetLengths, labelSet)
+        loss1 = trainer.train(trainSet, labelSetLengths, labelSet)
+
+        if correctTaskConfig != None:
+            loss2 = correctorTrainer.train(abnormalDataset, abnormalDatasetLengths, None)
 
         if epoch % 100 == 0:
             if isLoggerEnable:
