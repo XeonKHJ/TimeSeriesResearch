@@ -17,6 +17,28 @@ def getConfig():
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
 
+def logEvalModel(mlModel):
+    mlModel.eval()
+    normalIdx = 3
+    abnormalIdx = 5
+    validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
+    abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
+    anaOutput = mlModel(validInput, validLengthes)
+    anaAbnormalOutput = mlModel(abInput, abLengths)
+    # print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
+    x = validOutput[normalIdx].reshape([-1]).tolist()
+    px = anaOutput[normalIdx].reshape([-1]).tolist()
+
+    tl = anaAbnormalOutput[abnormalIdx]
+    t = abOutput[abnormalIdx]
+    ts = t - tl
+    tlList = tl.reshape([-1]).tolist()
+    tList = t.reshape([-1]).tolist()
+    tsList = ts.reshape([-1]).tolist()
+    maxDiff = (torch.abs(validOutput - anaOutput)).max().item()
+    print("max diff\t", maxDiff)
+    logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"])
+
 if __name__ == '__main__':
 
     args = ArgParser.getArgs()
@@ -61,26 +83,8 @@ if __name__ == '__main__':
 
         if epoch % 100 == 0:
             if isLoggerEnable:
-                mlModel.eval()
-                normalIdx = 3
-                abnormalIdx = 5
-                validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
-                abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
-                anaOutput = mlModel(validInput, validLengthes)
-                anaAbnormalOutput = mlModel(abInput, abLengths)
-                # print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
-                x = validOutput[normalIdx].reshape([-1]).tolist()
-                px = anaOutput[normalIdx].reshape([-1]).tolist()
-
-                tl = anaAbnormalOutput[abnormalIdx]
-                t = abOutput[abnormalIdx]
-                ts = t - tl
-                tlList = tl.reshape([-1]).tolist()
-                tList = t.reshape([-1]).tolist()
-                tsList = ts.reshape([-1]).tolist()
-                maxDiff = (torch.abs(validOutput - anaOutput)).max().item()
-                print("max diff\t", maxDiff)
-                logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"])
+                logEvalModel(mlModel=mlModel)
             torch.save(mlModel.state_dict(), path.join(modelFolderPath, taskName + ".pt"))
             mlModel.train()
         epoch += 1
+
