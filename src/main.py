@@ -91,12 +91,15 @@ if __name__ == '__main__':
         loss1 = trainer.train(trainSet, labelSetLengths, labelSet)
 
         if correctTaskConfig != None:
-            loss2 = correctorTrainer.train(abnormalDataset, abnormalDatasetLengths, None)
+            abnormalTrainDataset, abnormalLabelDataset, abnormalDatasetLengths = correctorModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
+            loss2 = correctorTrainer.train(abnormalTrainDataset, abnormalDatasetLengths, None)
 
         if epoch % 100 == 0:
             if isLoggerEnable:
                 logEvalModel(mlModel=mlModel)
             torch.save(mlModel.state_dict(), path.join(modelFolderPath, taskName + ".pt"))
+            if correctTaskConfig != None:
+                torch.save(correctorModel.state_dict(), path.join(modelFolderPath, correctorTaskName + ".pt"))
             mlModel.train()
         epoch += 1
 

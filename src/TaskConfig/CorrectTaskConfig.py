@@ -15,7 +15,7 @@ class CorrectTaskConfig(ITaskConfig):
         self.detectModel = detectModel
 
     def getConfig(self, isCuda = False):
-        feature_size = 1
+        feature_size = 2
         output_size = 1
         logger = PlotLogger()
         mlModel = LstmAutoencoder(feature_size,4,output_size,2)

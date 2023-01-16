@@ -15,6 +15,7 @@ class RAETrainer(ITrainer):
         self.logger = logger
 
     def train(self, trainSet, trainSetLength, labelSet):
+        self.mlModel.train()
         if self.ts.shape == torch.Size([0]):
             try:
                 if torch.cuda.is_available():
