@@ -23,9 +23,9 @@ class RAETrainer(ITrainer):
                     self.ts = torch.load(self.modelPath)
             except:
                 if torch.cuda.is_available():
-                    self.ts = torch.rand(trainSet.shape, requires_grad=True, device=torch.device('cuda'))
+                    self.ts = torch.zeros(trainSet.shape, requires_grad=True, device=torch.device('cuda'))
                 else:
-                    self.ts = torch.rand(trainSet.shape, requires_grad=True)
+                    self.ts = torch.zeros(trainSet.shape, requires_grad=True)
             self.step2Optimizer = torch.optim.Adam([self.ts], lr=1e-3)
         startTime = time.perf_counter()
         tl = trainSet - self.ts
@@ -43,8 +43,8 @@ class RAETrainer(ITrainer):
         loss = loss1 + loss2
         print("loss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item(), ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
         if self.epoch % 100 == 0:
-            tslist = self.ts[0].reshape([-1]).tolist()
-            self.logger.logSingleResult(tslist, "ts")
+            # tslist = self.ts[0].reshape([-1]).tolist()
+            # self.logger.logSingleResult(tslist, "ts")
             torch.save(self.ts, self.modelPath)
         self.epoch += 1
 

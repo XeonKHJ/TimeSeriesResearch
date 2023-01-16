@@ -2,20 +2,9 @@ import torch
 import torch.nn
 import os.path as path
 
-from Network.LstmAutoencoder import LstmAutoencoder
 
-from Trainers.RAETrainer import RAETrainer
-from Trainers.Trainer import Trainer
-
-from DataNormalizer.DataNormalizer import DataNormalizer
-
+from TaskConfig.RAETaskConfig import RAETaskConfig
 from DatasetReader.NABReader import NABReader
-from DatasetReader.SingleNABDataReader import SingleNABDataReader
-
-from Logger.PlotLogger import PlotLogger
-
-from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
-
 import ArgParser
 
 normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
@@ -23,23 +12,10 @@ abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnoma
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
+config = RAETaskConfig(modelFolderPath)
 def getConfig():
-    feature_size = 1
-    output_size = 1
-    logger = PlotLogger()
-    mlModel = LstmAutoencoder(feature_size,4,output_size,2)
-    try:
-        mlModel.load_state_dict(torch.load(path.join(modelFolderPath, mlModel.getName() + ".pt")))
-    except:
-        pass
-    if torch.cuda.is_available():
-        mlModel.cuda()
-    trainer = RAETrainer(mlModel, logger)
-    datasetSeperator = NoSepDataSeperator()
-    # logger = PlotLogger()
-    
-    dataNormalizer = DataNormalizer()
-    return mlModel, datasetSeperator, trainer, logger, dataNormalizer
+    mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
+    return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
 
 if __name__ == '__main__':
 
@@ -52,7 +28,7 @@ if __name__ == '__main__':
     # skabDataReader, skabDataLengths = skabDataReader.read()
     
 
-    mlModel, datasetSeperator, trainer, logger, dataNormalizer = getConfig()
+    mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = getConfig()
     
     dataNormalizer.addDatasetToRef(normalDataset)
     dataNormalizer.addDatasetToRef(abnormalDataset)
@@ -86,19 +62,25 @@ if __name__ == '__main__':
         if epoch % 100 == 0:
             if isLoggerEnable:
                 mlModel.eval()
+                normalIdx = 3
+                abnormalIdx = 5
                 validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
                 abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
                 anaOutput = mlModel(validInput, validLengthes)
                 anaAbnormalOutput = mlModel(abInput, abLengths)
-                print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
-                x = validOutput[1].reshape([-1]).tolist()
-                px = anaOutput[1].reshape([-1]).tolist()
+                # print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
+                x = validOutput[normalIdx].reshape([-1]).tolist()
+                px = anaOutput[normalIdx].reshape([-1]).tolist()
 
-                abx = abOutput[0].reshape([-1]).tolist()
-                abpx = anaAbnormalOutput[0].reshape([-1]).tolist()
-                # logger.logResult(abx, [])
-                logger.logResult(x, px)
-                logger.logResult(abx, abpx)
-            torch.save(mlModel.state_dict(), path.join(modelFolderPath, mlModel.getName() + ".pt"))
+                tl = anaAbnormalOutput[abnormalIdx]
+                t = abOutput[abnormalIdx]
+                ts = t - tl
+                tlList = tl.reshape([-1]).tolist()
+                tList = t.reshape([-1]).tolist()
+                tsList = ts.reshape([-1]).tolist()
+                maxDiff = (torch.abs(validOutput - anaOutput)).max().item()
+                print("max diff\t", maxDiff)
+                logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"])
+            torch.save(mlModel.state_dict(), path.join(modelFolderPath, taskName + ".pt"))
             mlModel.train()
         epoch += 1

@@ -17,5 +17,5 @@ class Trainer(ITrainer):
         self.optimizer.step()
         self.optimizer.zero_grad()
         backwardTime = time.perf_counter()
-        print("\tloss\t", loss.item(), "\tforward\t", outputedTime-startTime, "\tlosstime\t", backwardTime-outputedTime)
+        # print("\tloss\t", loss.item(), "\tforward\t", outputedTime-startTime, "\tlosstime\t", backwardTime-outputedTime)
         return loss

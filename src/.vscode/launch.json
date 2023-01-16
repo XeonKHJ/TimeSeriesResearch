@@ -5,10 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Train",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "args": ["--disablePlot"],
+            "justMyCode": true
+        },
+        {
+            "name": "Train Enable Log",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Eval",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/eval.py",
             "console": "integratedTerminal",
             "args": ["--disablePlot"],
             "justMyCode": true

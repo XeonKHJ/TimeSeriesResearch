@@ -14,6 +14,13 @@ class PlotLogger(ILogger):
         ax.legend()
         matplotlib.pyplot.show()
 
+    def logResults(self, datas, labels):
+        _, ax = matplotlib.pyplot.subplots()
+        for i in range(len(datas)):
+            ax.plot(datas[i], label = labels[i])
+        ax.legend()
+        matplotlib.pyplot.show()
+
     def logResult(self, ogData, predictData):
         fig, ax = matplotlib.pyplot.subplots()
         ax.plot(ogData, label="dataset")
