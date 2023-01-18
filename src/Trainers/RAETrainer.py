@@ -12,6 +12,7 @@ class RAETrainer(ITrainer):
         self.optimizer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
         self.step2Optimizer = None
         self.raeTsPath = "SavedModels/raels.pt"
+        self.modelFolderPath = "SavedModels"
         self.epoch = 0
         self.logger = logger
         self.taskName = taskName
@@ -66,7 +67,7 @@ class RAETrainer(ITrainer):
         tsList = ts.reshape([-1]).tolist()
         maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
         print("max diff\t", maxDiff)
-        self.logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"])
+        self.logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"], 'raetrainer-' + storeName)
 
     def save(self, filename=None):
         torch.save(self.ts, self.raeTsPath)

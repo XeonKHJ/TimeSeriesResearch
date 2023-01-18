@@ -1,6 +1,7 @@
 import torch
 import torch.nn
 import os.path as path
+from DatasetReader.SingleNABDataReader import SingleNABDataReader
 from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
 
 
@@ -9,7 +10,7 @@ from DatasetReader.NABReader import NABReader
 import ArgParser
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
-normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
+normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
@@ -19,34 +20,6 @@ correctTaskConfig = None
 def getConfig():
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
-
-def getCorrectorConfig(detectModel):
-    global correctTaskConfig
-    correctTaskConfig = CorrectTaskConfig(modelFolderPath, detectModel)
-    mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = correctTaskConfig.getConfig()
-    return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
-
-def logEvalModel(mlModel):
-    mlModel.eval()
-    normalIdx = 3
-    abnormalIdx = 5
-    validInput, validOutput, validLengthes = mlModel.getInputTensor(validDataset, validsetLengths)
-    abInput, abOutput, abLengths = mlModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
-    anaOutput = mlModel(validInput, validLengthes)
-    anaAbnormalOutput = mlModel(abInput, abLengths)
-    # print("result\t", torch.mean(anaOutput).item(), "\t", torch.mean(anaAbnormalOutput).item(), "\t", loss.item())
-    x = validOutput[normalIdx].reshape([-1]).tolist()
-    px = anaOutput[normalIdx].reshape([-1]).tolist()
-
-    tl = anaAbnormalOutput[abnormalIdx]
-    t = abOutput[abnormalIdx]
-    ts = t - tl
-    tlList = tl.reshape([-1]).tolist()
-    tList = t.reshape([-1]).tolist()
-    tsList = ts.reshape([-1]).tolist()
-    maxDiff = (torch.abs(validOutput - anaOutput)).max().item()
-    print("max diff\t", maxDiff)
-    logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"])
 
 if __name__ == '__main__':
     # read arg
