@@ -3,3 +3,5 @@ class ITrainer(object):
         pass
     def train(self, trainSet, labelSet):
         pass
+    def save(filename=None):
+        pass

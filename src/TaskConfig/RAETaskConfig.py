@@ -19,12 +19,12 @@ class RAETaskConfig(ITaskConfig):
         mlModel = LstmAutoencoder(feature_size,4,output_size,2)
         taskName = 'RAETask'
         try:
-            mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))
+            mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + '-raemodel' + ".pt")))
         except:
             pass
         if torch.cuda.is_available():
             mlModel.cuda()
-        trainer = RAETrainer(mlModel, logger)
+        trainer = RAETrainer(mlModel, logger, taskName + '-raemodel')
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
         

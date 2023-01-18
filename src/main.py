@@ -49,35 +49,32 @@ def logEvalModel(mlModel):
     logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"])
 
 if __name__ == '__main__':
-
+    # read arg
     args = ArgParser.getArgs()
     isLoggerEnable = not (args.disablePlot)
 
-    # dataset, datasetLengths = datasetReader.read()
+    # load config
+    mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = getConfig()
+
+    # load data
     normalDataset, normalDatasetLengths = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths = abnormalDataReader.read()
-    # skabDataReader, skabDataLengths = skabDataReader.read()
-    
-
-    mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = getConfig()
-    correctorModel, _, correctorTrainer, _, _, correctorTaskName = getCorrectorConfig(mlModel)
     dataNormalizer.addDatasetToRef(normalDataset)
     dataNormalizer.addDatasetToRef(abnormalDataset)
     normalDataset = dataNormalizer.normalizeDataset(normalDataset)
     abnormalDataset = dataNormalizer.normalizeDataset(abnormalDataset)
     trainDataset = datasetSeperator.getTrainningSet(normalDataset)
     trainsetLengths = datasetSeperator.getTrainningSet(normalDatasetLengths)
-
     validDataset = datasetSeperator.getValidationSet(normalDataset)
     validsetLengths = datasetSeperator.getValidationSet(normalDatasetLengths)
 
+    # start trainning
     toTrainDataset, labelDataset, labelDatasetLengths = mlModel.getInputTensor(trainDataset, trainsetLengths)
     mlModel.train()
     batchSize = toTrainDataset.shape[0]
     currentIdx = 0
     datasetSize = toTrainDataset.shape[0]
     epoch = 0
-    
     while True:
         if datasetSize - batchSize == 0:
             startIdx = 0
@@ -88,18 +85,11 @@ if __name__ == '__main__':
         trainSet = toTrainDataset[startIdx:endIdx]
         labelSet = labelDataset[startIdx:endIdx]
         labelSetLengths = labelDatasetLengths[startIdx:endIdx]
-        loss1 = trainer.train(trainSet, labelSetLengths, labelSet)
-
-        if correctTaskConfig != None:
-            abnormalTrainDataset, abnormalLabelDataset, abnormalDatasetLengths = correctorModel.getInputTensor(abnormalDataset, abnormalDatasetLengths)
-            loss2 = correctorTrainer.train(abnormalTrainDataset, abnormalDatasetLengths, None)
-
+        loss = trainer.train(trainSet, labelSetLengths, labelSet)
         if epoch % 100 == 0:
             if isLoggerEnable:
-                logEvalModel(mlModel=mlModel)
-            torch.save(mlModel.state_dict(), path.join(modelFolderPath, taskName + ".pt"))
-            if correctTaskConfig != None:
-                torch.save(correctorModel.state_dict(), path.join(modelFolderPath, correctorTaskName + ".pt"))
-            mlModel.train()
+                trainer.evalResult(normalDataset, normalDatasetLengths, 'normalset')
+                trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalLength')
+            trainer.save()
         epoch += 1
 
