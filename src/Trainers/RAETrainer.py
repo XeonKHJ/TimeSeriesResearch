@@ -19,8 +19,10 @@ class RAETrainer(ITrainer):
         if self.ts.shape == torch.Size([0]):
             try:
                 if torch.cuda.is_available():
+                    print('CUDA is avaliable')
                     self.ts = torch.load(self.modelPath, map_location = torch.device('cuda'))
                 else:
+                    print('CUDA is not avaliable.')
                     self.ts = torch.load(self.modelPath)
             except:
                 if torch.cuda.is_available():
