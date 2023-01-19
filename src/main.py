@@ -17,9 +17,9 @@ abnormalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificia
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
-config = RAECorrectorTaskConfig(modelFolderPath)
 # config = RAECorrectorTaskConfig(modelFolderPath)
-correctTaskConfig = None
+config = RAETaskConfig(modelFolderPath)
+
 def getConfig():
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
     return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
