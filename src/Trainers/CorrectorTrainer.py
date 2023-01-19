@@ -15,6 +15,7 @@ class CorrectorTrainer(ITrainer):
         self.logger = logger
         self.epoch = 0
         self.threadhold = 0.07
+        self.modelFolderPath = "SavedModels"
 
     def train(self, trainSet, trainSetLength, labelSet):
         self.aeModel.eval()

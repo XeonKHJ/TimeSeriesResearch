@@ -41,13 +41,12 @@ class RAETrainer(ITrainer):
         loss1 = self.lossFunc(tl, x)
         loss1.backward()
         self.optimizer.step()
-        
+        self.optimizer.zero_grad()
 
         loss2 = self.tsLambda * torch.norm(self.ts, p=1)
         loss2.backward()
         self.step2Optimizer.step()
         self.step2Optimizer.zero_grad()
-        self.optimizer.zero_grad()
 
         backwardTime = time.perf_counter() - startTime
         loss = loss1 + loss2
@@ -68,7 +67,7 @@ class RAETrainer(ITrainer):
         tsList = ts.reshape([-1]).tolist()
         maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
         print("max diff\t", maxDiff)
-        self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], 'raetrainer-' + storeName)
+        self.logger.logResults([tList, tlList, tsList], ["t", "tl", "ts"], 'raetrainer-' + storeName)
 
     def save(self, filename=None):
         torch.save(self.ts, self.raeTsPath)

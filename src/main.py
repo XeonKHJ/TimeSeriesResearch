@@ -9,6 +9,7 @@ from TaskConfig.RAECorrectorTaskConfig import RAECorrectorTaskConfig
 from TaskConfig.RAETaskConfig import RAETaskConfig
 from DatasetReader.NABReader import NABReader
 import ArgParser
+from TaskConfig.RAEWithOneDEncoderConfig import RAEWithOneDEncoderConfig
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
 normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
@@ -19,6 +20,7 @@ modelFolderPath = "SavedModels"
 
 # config = RAECorrectorTaskConfig(modelFolderPath)
 config = RAETaskConfig(modelFolderPath)
+# config = RAEWithOneDEncoderConfig(modelFolderPath)
 
 def getConfig():
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
