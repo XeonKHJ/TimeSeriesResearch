@@ -3,6 +3,7 @@ import torch.nn
 import os.path as path
 from DatasetReader.SingleNABDataReader import SingleNABDataReader
 from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
+from TaskConfig.RAECorrectorTaskConfig import RAECorrectorTaskConfig
 
 
 from TaskConfig.RAETaskConfig import RAETaskConfig
@@ -11,11 +12,13 @@ import ArgParser
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
 normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
-abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
+# normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
+abnormalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_jumpsup.csv")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
-config = RAETaskConfig(modelFolderPath)
+config = RAECorrectorTaskConfig(modelFolderPath)
+# config = RAECorrectorTaskConfig(modelFolderPath)
 correctTaskConfig = None
 def getConfig():
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
@@ -40,6 +43,7 @@ if __name__ == '__main__':
     trainsetLengths = datasetSeperator.getTrainningSet(normalDatasetLengths)
     validDataset = datasetSeperator.getValidationSet(normalDataset)
     validsetLengths = datasetSeperator.getValidationSet(normalDatasetLengths)
+    trainer.setAbnormal(abnormalDataset, abnormalDatasetLengths)
 
     # start trainning
     toTrainDataset, labelDataset, labelDatasetLengths = mlModel.getInputTensor(trainDataset, trainsetLengths)
@@ -62,7 +66,7 @@ if __name__ == '__main__':
         if epoch % 100 == 0:
             if isLoggerEnable:
                 trainer.evalResult(normalDataset, normalDatasetLengths, 'normalset')
-                trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalLength')
+                trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalset')
             trainer.save()
         epoch += 1
 

@@ -20,7 +20,7 @@ class RAECorrectorTaskConfig(ITaskConfig):
         logger = PlotLogger()
         aeModel = LstmAutoencoder(feature_size,4,output_size,2)
         correctorModel = LstmAutoencoder(2, 4, output_size, 2)
-        aeModelName = 'RAECorrectorAE'
+        aeModelName = 'RAETask-raemodel'
         correctorModelName = 'RAECorrector'
         try:
             aeModel.load_state_dict(torch.load(path.join(self.modelFolderPath, aeModelName + ".pt")))
@@ -34,4 +34,4 @@ class RAECorrectorTaskConfig(ITaskConfig):
         datasetSeperator = NoSepDataSeperator()
         dataNormalizer = DataNormalizer()
         
-        return datasetSeperator, trainer, logger, dataNormalizer
+        return aeModel, datasetSeperator, trainer, logger, dataNormalizer, aeModelName

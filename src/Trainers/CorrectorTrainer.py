@@ -26,15 +26,15 @@ class CorrectorTrainer(ITrainer):
 
         correctorInputTensor = torch.cat((tl, ts), 2)
         tr1 = self.correctorModel(correctorInputTensor, trainSetLength)
-        maskedTls = tr1.masked_fill(tsMask, 0)
-        loss1 = self.lossFunc(maskedTls, trainSet.masked_fill(tsMask, 0))
+        self.maskedTls = tr1.masked_fill(tsMask, 0)
+        loss1 = self.lossFunc(self.maskedTls, trainSet.masked_fill(tsMask, 0))
         loss1.backward()
         self.correctorOptimizer.step()
         self.correctorOptimizer.zero_grad()
 
         tr2 = self.correctorModel(correctorInputTensor, trainSetLength)
         # tr3 = trainSet.masked_fill(tsMask, tr2[masked_fill])
-        tr3 = tr2
+        tr3 = torch.where(ts >= self.threadhold, tr2, trainSet)
         aetr = self.aeModel(tr3, trainSetLength).detach()
         loss2 = self.lossFunc(tr3, aetr)
         loss2.backward()
@@ -58,11 +58,11 @@ class CorrectorTrainer(ITrainer):
         self.aetr = aetr
 
 
-    def evalResult(self):
+    def evalResult(self, validDataset, validsetLengths, storeName=None):
         for i in range(self.trainSet.shape[0]):
             self.logger.logResults([
                 self.trainSet[i].reshape([-1]).tolist(),
-                self.tr[i].reshape([-1]).tolist(),
+                self.tr1[i].reshape([-1]).tolist(),
                 self.tl[i].reshape([-1]).tolist(),
                 self.aetr[i].reshape([-1]).tolist()
             ], ['abdata', 'tr', 'tl', 'aetr'], str(i) + '-res1')

@@ -8,7 +8,7 @@ class RAETrainer(ITrainer):
         self.aeModel = mlModel
         self.lossFunc = self.lossFunc = torch.nn.MSELoss()
         self.ts = torch.zeros([0])
-        self.tsLambda = 0.001
+        self.tsLambda = 0.01
         self.optimizer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
         self.step2Optimizer = None
         self.raeTsPath = "SavedModels/raels.pt"

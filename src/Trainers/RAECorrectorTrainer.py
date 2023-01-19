@@ -7,25 +7,37 @@ import time
 from Trainers.RAETrainer import RAETrainer
 
 class RAECorrectorTrainer(ITrainer):
-    def __init__(self, aeModel, correctorModel, logger, abnormalSet, abnormalSetLengths):
+    def __init__(self, aeModel, correctorModel, logger):
         self.aeModel = aeModel
-        self.raeTrainer = RAETrainer(aeModel, logger)
+        self.raeTrainer = RAETrainer(aeModel, logger, 'raecorrectorae')
         self.correctorTrainer = CorrectorTrainer(aeModel, correctorModel ,logger)
-        self.abnormalSet = abnormalSet
-        self.abnormalSetLengths = abnormalSetLengths
         self.epoch = 0
+        self.isAeTrained = False
 
-    def train(self, trainSet, trainSetLength, labelSet):
-        aeEpochPerRound = 1
+    def setAbnormal(self, abnormalSet, abnormalSetLengths):
+        if torch.cuda.is_available():
+            self.abnormalSet = abnormalSet.cuda()
+        else:
+            self.abnormalSet = abnormalSet
+        self.abnormalSetLengths = abnormalSetLengths
+
+    def train(self, trainSet, trainSetLength, labelSet):  
+        aeEpochPerRound = 1000
         correctorEpochPerRound = 1
-        if self.epoch % aeEpochPerRound:
-            aeLoss = self.raeTrainer.train(trainSet, trainSetLength, labelSet)
-        if self.epoch % correctorEpochPerRound:
-            correctorLoss = self.correctorTrainer.train(self.abnormalSet, self.abnormalSetLengths, None)
-        loss = aeLoss + correctorLoss
-        print('RAECorrectorTrainer\tloss\t',loss.item(), '\taeLoss\t', aeLoss.item(), '\tcorrectorLoss\t', correctorLoss.item())
+        if not self.isAeTrained:
+            for i in range(aeEpochPerRound):
+                aeLoss = self.raeTrainer.train(trainSet, trainSetLength, labelSet)
+            self.isAeTrained = True
+        # for i in range(correctorEpochPerRound):
+        correctorLoss = self.correctorTrainer.train(self.abnormalSet, self.abnormalSetLengths, None)
+        loss = correctorLoss
+        print('\tcorrectorLoss\t', correctorLoss.item())
         return loss
 
     def evalResult(self, validDataset, validsetLengths, storeName=None):
-        self.raeTrainer.evalResult(validDataset, validsetLengths)
-        self.correctorTrainer.evalResult(validDataset, validsetLengths)
+        self.raeTrainer.evalResult(validDataset, validsetLengths, storeName)
+        self.correctorTrainer.evalResult(validDataset, validsetLengths, 'RAECorrectorTrainer')
+
+    def save(self):
+        self.raeTrainer.save()
+        self.correctorTrainer.save('correctortrainer')
