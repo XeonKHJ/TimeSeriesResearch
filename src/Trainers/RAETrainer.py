@@ -6,9 +6,9 @@ import os.path as path
 class RAETrainer(ITrainer):
     def __init__(self, mlModel, logger, taskName):
         self.aeModel = mlModel
-        self.lossFunc = self.lossFunc = torch.nn.MSELoss()
+        self.lossFunc = torch.nn.MSELoss()
         self.ts = torch.zeros([0])
-        self.tsLambda = 0.01
+        self.tsLambda = 0.1
         self.optimizer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
         self.step2Optimizer = None
         self.raeTsPath = "SavedModels/raels.pt"
@@ -37,17 +37,18 @@ class RAETrainer(ITrainer):
         tl = trainSet - self.ts
         x = self.aeModel(tl, trainSetLength)
         fowardTime = time.perf_counter() - startTime
-
         loss1 = self.lossFunc(tl, x)
         loss1.backward()
         self.optimizer.step()
+        self.optimizer.zero_grad()
         
-
-        loss2 = self.tsLambda * torch.norm(self.ts, p=1)
+        tl = self.aeModel(tl, trainSetLength)
+        self.ts2 = trainSet - tl
+        loss2 = self.tsLambda * torch.norm(self.ts2, p=1)
         loss2.backward()
         self.step2Optimizer.step()
         self.step2Optimizer.zero_grad()
-        self.optimizer.zero_grad()
+        
 
         backwardTime = time.perf_counter() - startTime
         loss = loss1 + loss2
@@ -56,19 +57,20 @@ class RAETrainer(ITrainer):
 
     def evalResult(self, validDataset, validsetLengths, storeName=None):
         self.aeModel.eval()
-        abnormalIdx = 0
-        abnormalInputSet, abnormalLabelSet, abnormalLengths = self.aeModel.getInputTensor(
-            validDataset, validsetLengths)
-        abnormalOutput = self.aeModel(abnormalInputSet, abnormalLengths)    
-        tl = abnormalOutput[abnormalIdx]
-        t = abnormalLabelSet[abnormalIdx]
-        ts = t - tl
-        tlList = tl.reshape([-1]).tolist()
-        tList = t.reshape([-1]).tolist()
-        tsList = ts.reshape([-1]).tolist()
-        maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
-        print("max diff\t", maxDiff)
-        self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], 'raetrainer-' + storeName)
+        for abnormalIdx in range(len(validsetLengths)):
+            abnormalInputSet, abnormalLabelSet, abnormalLengths = self.aeModel.getInputTensor(
+                validDataset, validsetLengths)
+            abnormalOutput = self.aeModel(abnormalInputSet, abnormalLengths)    
+            tl = abnormalOutput[abnormalIdx]
+            t = abnormalLabelSet[abnormalIdx]
+            ts = t - tl
+            tlList = tl.reshape([-1]).tolist()
+            tList = t.reshape([-1]).tolist()
+            tsList = ts.reshape([-1]).tolist()
+            # selftsList = self.ts[0].reshape([-1]).tolist()
+            maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
+            print("max diff\t", maxDiff)
+            self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], 'raetrainer-' + storeName + "-" + str(abnormalIdx))
 
     def save(self, filename=None):
         torch.save(self.ts, self.raeTsPath)
