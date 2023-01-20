@@ -48,11 +48,12 @@ class RAETrainer(ITrainer):
         loss2.backward()
         self.step2Optimizer.step()
         self.step2Optimizer.zero_grad()
+        self.optimizer.zero_grad()
         
 
         backwardTime = time.perf_counter() - startTime
         loss = loss1 + loss2
-        print("loss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item(), ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
+        print("loss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item() / self.tsLambda, ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
         return loss
 
     def evalResult(self, validDataset, validsetLengths, storeName=None):
