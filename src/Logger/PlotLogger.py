@@ -3,7 +3,8 @@ import matplotlib.pyplot
 import os.path
 
 class PlotLogger(ILogger):
-    def __init__(self):
+    def __init__(self, isPlotEnable):
+        self.isPlotEnable = isPlotEnable
         pass
 
     def logInfo(self, folder):
@@ -13,14 +14,16 @@ class PlotLogger(ILogger):
         _, ax = matplotlib.pyplot.subplots()
         ax.plot(data, label=label)
         ax.legend()
-        matplotlib.pyplot.show()
+        if self.isPlotEnable:
+            matplotlib.pyplot.show()
 
     def logResults(self, datas, labels, picname=None):
         _, ax = matplotlib.pyplot.subplots()
         for i in range(len(datas)):
             ax.plot(datas[i], label = labels[i])
         ax.legend()
-        matplotlib.pyplot.show()
+        if self.isPlotEnable:
+            matplotlib.pyplot.show()
         if picname != None:
             matplotlib.pyplot.savefig(os.path.join('SavedPics', picname))
             print(picname, " saved.")
@@ -30,4 +33,5 @@ class PlotLogger(ILogger):
         ax.plot(ogData, label="dataset")
         ax.plot(predictData, label="predict")
         ax.legend()
-        matplotlib.pyplot.show()
+        if self.isPlotEnable:
+            matplotlib.pyplot.show()

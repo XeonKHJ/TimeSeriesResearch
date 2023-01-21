@@ -11,13 +11,14 @@ import torch
 import os.path as path
 
 class RAECorrectorTaskConfig(ITaskConfig):
-    def __init__(self, modelFolderPath):
+    def __init__(self, modelFolderPath, isPlotEnable):
         self.modelFolderPath = modelFolderPath
+        self.isPlotEnable = isPlotEnable
 
     def getConfig(self, isCuda = False):
         feature_size = 1
         output_size = 1
-        logger = PlotLogger()
+        logger = PlotLogger(self.isPlotEnable)
         aeModel = LstmAutoencoder(feature_size,4,output_size,2)
         correctorModel = LstmAutoencoder(2, 4, output_size, 2)
         aeModelName = 'RAETask-raemodel'

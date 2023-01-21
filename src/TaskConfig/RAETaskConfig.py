@@ -9,13 +9,14 @@ import torch
 import os.path as path
 
 class RAETaskConfig(ITaskConfig):
-    def __init__(self, modelFolderPath):
+    def __init__(self, modelFolderPath, isPlotEnable):
         self.modelFolderPath = modelFolderPath
+        self.isPlotEnable = isPlotEnable
 
     def getConfig(self, isCuda = False):
         feature_size = 1
         output_size = 1
-        logger = PlotLogger()
+        logger = PlotLogger(self.isPlotEnable)
         mlModel = LstmAutoencoder(feature_size,4,output_size,2)
         taskName = 'RAETask'
         try:
