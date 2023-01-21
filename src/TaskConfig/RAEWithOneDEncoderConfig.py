@@ -25,7 +25,7 @@ class RAEWithOneDEncoderConfig(ITaskConfig):
             pass
         if torch.cuda.is_available():
             mlModel.cuda()
-        trainer = Trainer(mlModel, taskName + '-raemodel', logger)
+        trainer = Trainer(mlModel, taskName, logger)
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
         
