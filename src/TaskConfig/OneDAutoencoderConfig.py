@@ -8,7 +8,7 @@ from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 import torch
 import os.path as path
 
-class RAEWithOneDEncoderConfig(ITaskConfig):
+class OneDAutoencoderConfig(ITaskConfig):
     def __init__(self, modelFolderPath, isLogEnable):
         self.modelFolderPath = modelFolderPath
         self.isLogEnable = isLogEnable
@@ -18,7 +18,7 @@ class RAEWithOneDEncoderConfig(ITaskConfig):
         output_size = 1
         logger = PlotLogger(isPlotEnable=self.isLogEnable)
         mlModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
-        taskName = 'RAEWithOneDEncoderConfig'
+        taskName = 'OneDAutoencoderConfig'
         try:
             mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))
         except:

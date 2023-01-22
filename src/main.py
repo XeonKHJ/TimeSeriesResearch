@@ -9,7 +9,7 @@ from TaskConfig.RAECorrectorTaskConfig import RAECorrectorTaskConfig
 from TaskConfig.RAETaskConfig import RAETaskConfig
 from DatasetReader.NABReader import NABReader
 import ArgParser
-from TaskConfig.RAEWithOneDEncoderConfig import RAEWithOneDEncoderConfig
+from TaskConfig.OneDAutoencoderConfig import OneDAutoencoderConfig
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
 normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     isLoggerEnable = not (args.disablePlot)
     # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
-    config = RAEWithOneDEncoderConfig(modelFolderPath, isLoggerEnable)
+    config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
