@@ -37,6 +37,7 @@ class GruOneDEncodedAutoencoder(nn.Module):
         paddedX, paddedXLengthes = torchrnn.pad_packed_sequence(x, True)
         paddedX = hiddenOutputX[self.num_layers - 1,:,:]
         paddedX = self.lstmEncoderForward(paddedX)
+        paddedX = self.relu(paddedX)
         repeatedXZeros = torch.zeros([to_x.shape[0], to_x.shape[1], self.encodedFeatureSize]).cuda()
         repeatedXZeros[:,0,:] = paddedX
         # repeatedX = paddedX.repeat([1,to_x.shape[1]]).reshape([paddedX.shape[0], -1, self.seasonalityN])
