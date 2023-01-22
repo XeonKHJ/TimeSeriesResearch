@@ -4,11 +4,11 @@ import time
 import os.path as path
 
 class RAETrainer(ITrainer):
-    def __init__(self, mlModel, logger, taskName):
+    def __init__(self, mlModel, logger, taskName, tsLambda=0.1):
         self.aeModel = mlModel
         self.lossFunc = torch.nn.MSELoss()
         self.ts = torch.zeros([0])
-        self.tsLambda = 0.1
+        self.tsLambda = tsLambda
         self.optimizer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
         self.step2Optimizer = None
         self.raeTsPath = "SavedModels/raels.pt"
@@ -71,7 +71,7 @@ class RAETrainer(ITrainer):
             # selftsList = self.ts[0].reshape([-1]).tolist()
             maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
             print("max diff\t", maxDiff)
-            self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], 'raetrainer-' + storeName + "-" + str(abnormalIdx))
+            self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName+ '-raetrainer-' + storeName + "-" + str(abnormalIdx))
 
     def save(self, filename=None):
         torch.save(self.ts, self.raeTsPath)
