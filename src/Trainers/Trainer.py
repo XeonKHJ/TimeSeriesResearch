@@ -4,10 +4,10 @@ import torch
 import os.path as path
 
 class Trainer(ITrainer):
-    def __init__(self, model, taskName, logger):
+    def __init__(self, model, taskName, logger, learningRate=1e-3):
         self.mlModel = model
         self.lossFunc = torch.nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.mlModel.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.mlModel.parameters(), lr=learningRate)
         self.taskName = taskName
         self.logger = logger
         self.modelFolderPath = "SavedModels"
