@@ -1,6 +1,8 @@
+from Network.LstmOneDEncodedAutoencoder import LstmOneDEncodedAutoencoder
 from Network.GruOneDEncodedAutoencoder import GruOneDEncodedAutoencoder
 from Logger.PlotLogger import PlotLogger
 from TaskConfig.ITaskConfig import ITaskConfig
+from Trainers.RAETrainer import RAETrainer
 from Trainers.Trainer import Trainer
 from DataNormalizer.DataNormalizer import DataNormalizer
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
@@ -25,6 +27,7 @@ class OneDAutoencoderConfig(ITaskConfig):
             pass
         if torch.cuda.is_available():
             mlModel.cuda()
+        # trainer = RAETrainer(mlModel, logger, taskName, 10)
         trainer = Trainer(mlModel, taskName, logger)
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
