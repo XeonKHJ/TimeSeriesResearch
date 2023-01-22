@@ -16,6 +16,7 @@ class PlotLogger(ILogger):
         ax.legend()
         if self.isPlotEnable:
             matplotlib.pyplot.show()
+        matplotlib.pyplot.close()
 
     def logResults(self, datas, labels, picname=None):
         _, ax = matplotlib.pyplot.subplots()
@@ -27,6 +28,7 @@ class PlotLogger(ILogger):
         if picname != None:
             matplotlib.pyplot.savefig(os.path.join('SavedPics', picname))
             print(picname, " saved.")
+        matplotlib.pyplot.close()
 
     def logResult(self, ogData, predictData):
         fig, ax = matplotlib.pyplot.subplots()
@@ -35,3 +37,4 @@ class PlotLogger(ILogger):
         ax.legend()
         if self.isPlotEnable:
             matplotlib.pyplot.show()
+        matplotlib.pyplot.close()
