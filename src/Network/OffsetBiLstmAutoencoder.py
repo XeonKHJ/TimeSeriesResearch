@@ -19,6 +19,9 @@ class OffsetBiLstmAutoencoder(nn.Module):
         self.hidden_size = hidden_size
         self.output_size = output_size
 
+        self.headFC = nn.Linear(feature_size, 2 * hidden_size)
+        self.tailFC = nn.Linear(feature_size, 2 * hidden_size)
+
         self.lstmEncoder = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True)
         self.rlstmEncoder = nn.LSTM(feature_size, hidden_size, num_layers, batch_first=True)
 
@@ -35,7 +38,13 @@ class OffsetBiLstmAutoencoder(nn.Module):
         encoded_paded_x, xBatchSize = torchrnn.pad_packed_sequence(encoded_packed_x, True)
         encoded_paded_rx, rxBatchSize = torchrnn.pad_packed_sequence(encoded_packed_rx, True)
 
-        encoded_paded_xrx = torch.concat((encoded_paded_rx, encoded_paded_x), 2)
+        encodedHead = self.headFC(encoded_paded_rx[:,1,:])
+        encodedTail = self.tailFC(encoded_packed_x[:,encoded_packed_x.shape[1]-2,:])
+
+        encodedPackedX = torch.concat((encodedHead,encoded_packed_x), 2)
+        encodedPackedRx = torch.concat((encoded_packed_rx, encodedTail), 2)
+
+        encoded_paded_xrx = torch.concat((encoded_paded_rx[:,encoded_paded_rx.shape[0]-1, :], encoded_paded_x[:,1:encoded_paded_rx.shape[0]]), 2)
         encoded_packed_xrx = torchrnn.pack_padded_sequence(encoded_paded_xrx, xTimestampSizes, True)
 
         decoded_packed_x, b = self.lstmDecoder(encoded_packed_xrx)

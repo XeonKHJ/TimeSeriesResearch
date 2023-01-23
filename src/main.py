@@ -4,6 +4,7 @@ import os.path as path
 from DatasetReader.SingleNABDataReader import SingleNABDataReader
 from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
 from TaskConfig.RAECorrectorTaskConfig import RAECorrectorTaskConfig
+from TaskConfig.RAECorrectorWithTrendTaskConfig import RAECorrectorWithTrendTaskConfig
 
 
 from TaskConfig.RAETaskConfig import RAETaskConfig
@@ -23,9 +24,10 @@ if __name__ == '__main__':
     # read arg
     args = ArgParser.getArgs()
     isLoggerEnable = not (args.disablePlot)
-    # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
+    config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
     config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
+    # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()

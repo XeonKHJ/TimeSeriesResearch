@@ -1,4 +1,4 @@
-from GruOneDEncodedAutoencoder import GruOneDEncodedAutoencoder
+from Network.GruOneDEncodedAutoencoder import GruOneDEncodedAutoencoder
 from Logger.PlotLogger import PlotLogger
 from Network.LstmAutoencoder import LstmAutoencoder
 from TaskConfig.ITaskConfig import ITaskConfig
@@ -23,10 +23,10 @@ class RAECorrectorWithTrendTaskConfig(ITaskConfig):
         logger = PlotLogger(self.isPlotEnable)
         generatorModel = LstmAutoencoder(feature_size,4,output_size,2)
         trendModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
-        correctorModel = LstmAutoencoder(2, 4, output_size, 2)
+        correctorModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
         aeModelName = 'RAETask-raemodel'
-        correctorModelName = 'RAECorrector'
-        trendModelName = 'RAEWithOneDEncoderConfig-raemodel'
+        correctorModelName = 'RAECorrectorWithTrend'
+        trendModelName = 'OneDAutoencoderConfig'
         try:
             generatorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, aeModelName + ".pt")))
             correctorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, correctorModelName + ".pt")))
@@ -37,7 +37,7 @@ class RAECorrectorWithTrendTaskConfig(ITaskConfig):
             generatorModel.cuda()
             correctorModel.cuda()
             trendModel.cuda()
-        trainer = RAECorrectorWithTrendTrainer(aeModel=generatorModel, correctorModel=correctorModel, logger = logger)
+        trainer = RAECorrectorWithTrendTrainer(generatorModel=generatorModel, correctorModel=correctorModel, trendModel=trendModel, logger = logger)
         datasetSeperator = NoSepDataSeperator()
         dataNormalizer = DataNormalizer()
         

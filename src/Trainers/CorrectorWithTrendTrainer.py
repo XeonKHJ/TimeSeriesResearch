@@ -4,7 +4,7 @@ import os.path as path
 
 
 class CorrectorWithTrendTrainer(ITrainer):
-    def __init__(self, generatorModel, trendModel, correctorModel, logger):
+    def __init__(self, generatorModel, trendModel, correctorModel, logger, lambda1 = 1, lambda2 = 0.01):
         self.generatorModel = generatorModel
         self.trendModel = trendModel
         self.correctorModel = correctorModel
@@ -16,8 +16,8 @@ class CorrectorWithTrendTrainer(ITrainer):
         self.logger = logger
         self.epoch = 0
         self.threadhold = 0.07
-        self.lambda1 = 1
-        self.lambda2 = 0.01
+        self.lambda1 = lambda1
+        self.lambda2 = lambda2
         self.modelFolderPath = "SavedModels"
         self.tl = None
         self.trendTl = None
@@ -27,7 +27,7 @@ class CorrectorWithTrendTrainer(ITrainer):
         self.trendModel.train()
         self.correctorModel.train()
 
-        if self.tl != None:
+        if self.tl == None:
             self.tl = self.generatorModel(trainSet, trainSetLength).detach()
             self.trend = self.trendModel(trainSet, trainSetLength).detach()
             self.ts = torch.abs(trainSet - self.tl)

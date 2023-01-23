@@ -27,7 +27,7 @@ class PlotLogger(ILogger):
             matplotlib.pyplot.show()
         if picname != None:
             matplotlib.pyplot.savefig(os.path.join('SavedPics', picname))
-            print(picname, " saved.")
+            # print(picname, " saved.")
         matplotlib.pyplot.close()
 
     def logResult(self, ogData, predictData):
