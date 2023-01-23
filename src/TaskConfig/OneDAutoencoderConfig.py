@@ -28,7 +28,7 @@ class OneDAutoencoderConfig(ITaskConfig):
         if torch.cuda.is_available():
             mlModel.cuda()
         # trainer = RAETrainer(mlModel, logger, taskName, 10)
-        trainer = Trainer(mlModel, taskName, logger)
+        trainer = Trainer(mlModel, taskName, logger, 1e-3)
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
         
