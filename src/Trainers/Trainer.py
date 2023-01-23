@@ -38,7 +38,7 @@ class Trainer(ITrainer):
             tList = t.reshape([-1]).tolist()
             tsList = ts.reshape([-1]).tolist()
             maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
-            print("max diff\t", maxDiff)
+            # print("max diff\t", maxDiff)
             self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName + '-' + storeName + "-" + str(abnormalIdx))
 
     def save(self, filename=None):
