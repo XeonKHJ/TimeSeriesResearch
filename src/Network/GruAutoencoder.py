@@ -20,6 +20,7 @@ class GruAutoencoder(nn.Module):
         self.output_size = output_size
 
         self.gruEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
+        self.encodeFc = nn.Linear(hidden_size, hidden_size)
         self.gruDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True) 
         
         self.forwardCalculation = nn.Linear(hidden_size,output_size)
@@ -29,8 +30,11 @@ class GruAutoencoder(nn.Module):
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, b = self.gruEncoder(x)  # _x is input, size (seq_len, batch, input_size)
-        x, b = self.gruDecoder(x)
-
+        paddedX, length = torchrnn.pad_packed_sequence(x, True)
+        paddedX = self.encodeFc(paddedX)
+        packedPaddedX = torchrnn.pack_padded_sequence(paddedX, xTimestampSizes, True)
+        x, b = self.gruDecoder(packedPaddedX)
+        
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
         x = self.forwardCalculation(x)
