@@ -26,8 +26,8 @@ if __name__ == '__main__':
     isLoggerEnable = not (args.disablePlot)
     config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
-    config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
-    # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
+    # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
+    config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()

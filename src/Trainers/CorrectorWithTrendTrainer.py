@@ -44,7 +44,8 @@ class CorrectorWithTrendTrainer(ITrainer):
         restoreLoss = self.lossFunc(maskedTr, aetr)
 
         trendTr = self.trendModel(tr, trainSetLength).detach()
-        trendLoss = self.lossFunc(trendTr, self.trend)
+        self.trendTr = trendTr
+        trendLoss = self.lossFunc(tr, trendTr)
 
         loss = nonErrorLoss + self.lambda1 * restoreLoss + self.lambda2 * trendLoss
     
@@ -67,9 +68,10 @@ class CorrectorWithTrendTrainer(ITrainer):
         for i in range(self.trainSet.shape[0]):
             self.logger.logResults([
                 self.trainSet[i].reshape([-1]).tolist(),
+                self.tl[i].reshape([-1]).tolist(),
                 self.tr[i].reshape([-1]).tolist(),
-                self.tl[i].reshape([-1]).tolist()
-            ], ['abdata', 'tr', 'tl'], str(i) + '-res1')
+                self.trendTr[i].reshape([-1]).tolist(),
+            ], ['abdata', 'tl', 'tr', 'trend'], str(i) + '-res1')
 
     def save(self, filename=None):
         torch.save(self.correctorModel.state_dict(), path.join(self.modelFolderPath, filename + ".pt"))

@@ -12,7 +12,7 @@ class RAECorrectorWithTrendTrainer(ITrainer):
     def __init__(self, generatorModel, correctorModel, trendModel, logger):
         self.generatorModel = generatorModel
         self.raeTrainer = RAETrainer(generatorModel, logger, 'raecorrectorae')
-        self.correctorTrainer = CorrectorWithTrendTrainer(generatorModel, trendModel, correctorModel ,logger)
+        self.correctorTrainer = CorrectorWithTrendTrainer(generatorModel, trendModel, correctorModel ,logger, lambda2=0.1)
         self.trendTrainer = Trainer(trendModel, 'RAECorrectorWithTrendTrainer', logger, 1e-3)
         self.epoch = 0
         self.isAeTrained = False

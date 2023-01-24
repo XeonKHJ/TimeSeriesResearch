@@ -23,14 +23,14 @@ class RAECorrectorWithTrendTaskConfig(ITaskConfig):
         logger = PlotLogger(self.isPlotEnable)
         generatorModel = LstmAutoencoder(feature_size,4,output_size,2)
         trendModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
-        correctorModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
+        correctorModel = LstmAutoencoder(2,4,output_size,2)
         aeModelName = 'RAETask-raemodel'
         correctorModelName = 'RAECorrectorWithTrend'
         trendModelName = 'OneDAutoencoderConfig'
         try:
             generatorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, aeModelName + ".pt")))
-            correctorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, correctorModelName + ".pt")))
             trendModel.load_state_dict(torch.load(path.join(self.modelFolderPath, trendModelName + ".pt")))
+            correctorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, correctorModelName + ".pt")))           
         except:
             pass
         if torch.cuda.is_available():
