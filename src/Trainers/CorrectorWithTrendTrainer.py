@@ -48,7 +48,7 @@ class CorrectorWithTrendTrainer(ITrainer):
         self.trendTr = trendTr
         trendLoss = self.lossFunc(tr, trendTr)
 
-        self.ts = trainSetLength - tr
+        self.ts = trainSet - tr
 
         loss = nonErrorLoss + self.lambda1 * restoreLoss + self.lambda2 * trendLoss
     

@@ -3,6 +3,7 @@ import torch.nn
 import os.path as path
 from DatasetReader.SingleNABDataReader import SingleNABDataReader
 from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
+from TaskConfig.GruAEConfig import GruAEConfig
 from TaskConfig.RAECorrectorTaskConfig import RAECorrectorTaskConfig
 from TaskConfig.RAECorrectorWithTrendTaskConfig import RAECorrectorWithTrendTaskConfig
 
@@ -13,10 +14,10 @@ import ArgParser
 from TaskConfig.OneDAutoencoderConfig import OneDAutoencoderConfig
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
-normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
-# normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
-# abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
-abnormalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_jumpsup.csv")
+# normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
+abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
+# abnormalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_jumpsup.csv")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
@@ -24,10 +25,11 @@ if __name__ == '__main__':
     # read arg
     args = ArgParser.getArgs()
     isLoggerEnable = not (args.disablePlot)
-    config = RAETaskConfig(modelFolderPath, isLoggerEnable)
+    # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
     # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
-    config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
+    # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
+    config = GruAEConfig(modelFolderPath, isLoggerEnable)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
