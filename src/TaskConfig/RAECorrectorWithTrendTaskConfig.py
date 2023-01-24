@@ -1,3 +1,5 @@
+from Network.GruAutoencoder import GruAutoencoder
+from Network.BiGruAutoencoder import BiGruAutoencoder
 from Network.GruOneDEncodedAutoencoder import GruOneDEncodedAutoencoder
 from Logger.PlotLogger import PlotLogger
 from Network.LstmAutoencoder import LstmAutoencoder
@@ -23,12 +25,12 @@ class RAECorrectorWithTrendTaskConfig(ITaskConfig):
         logger = PlotLogger(self.isPlotEnable)
         generatorModel = LstmAutoencoder(feature_size,4,output_size,2)
         trendModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
-        correctorModel = LstmAutoencoder(2,4,output_size,2)
-        aeModelName = 'RAETask-raemodel'
+        correctorModel = GruAutoencoder(2,4,output_size,2)
+        generatorModelName = 'RAETask-raemodel'
         correctorModelName = 'RAECorrectorWithTrend'
         trendModelName = 'OneDAutoencoderConfig'
         try:
-            generatorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, aeModelName + ".pt")))
+            generatorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, generatorModelName + ".pt")))
             trendModel.load_state_dict(torch.load(path.join(self.modelFolderPath, trendModelName + ".pt")))
             correctorModel.load_state_dict(torch.load(path.join(self.modelFolderPath, correctorModelName + ".pt")))           
         except:
@@ -41,4 +43,4 @@ class RAECorrectorWithTrendTaskConfig(ITaskConfig):
         datasetSeperator = NoSepDataSeperator()
         dataNormalizer = DataNormalizer()
         
-        return generatorModel, datasetSeperator, trainer, logger, dataNormalizer, aeModelName
+        return generatorModel, datasetSeperator, trainer, logger, dataNormalizer, generatorModelName

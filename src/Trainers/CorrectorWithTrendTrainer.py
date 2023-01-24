@@ -39,13 +39,16 @@ class CorrectorWithTrendTrainer(ITrainer):
         self.maskedTls = tr.masked_fill(self.tsMask, 0)
         nonErrorLoss = self.lossFunc(self.maskedTls, trainSet.masked_fill(self.tsMask, 0))
 
-        maskedTr = torch.where(self.ts >= self.threadhold, tr, trainSet)
+        # maskedTr = torch.where(self.ts >= self.threadhold, tr, trainSet)
+        maskedTr = tr
         aetr = self.generatorModel(maskedTr, trainSetLength).detach()
         restoreLoss = self.lossFunc(maskedTr, aetr)
 
         trendTr = self.trendModel(tr, trainSetLength).detach()
         self.trendTr = trendTr
         trendLoss = self.lossFunc(tr, trendTr)
+
+        self.ts = trainSetLength - tr
 
         loss = nonErrorLoss + self.lambda1 * restoreLoss + self.lambda2 * trendLoss
     
@@ -74,4 +77,5 @@ class CorrectorWithTrendTrainer(ITrainer):
             ], ['abdata', 'tl', 'tr', 'trend'], str(i) + '-res1')
 
     def save(self, filename=None):
-        torch.save(self.correctorModel.state_dict(), path.join(self.modelFolderPath, filename + ".pt"))
+        torch.save(self.correctorModel.state_dict(), path.join(self.modelFolderPath, filename))
+        torch.save(self.ts, path.join(self.modelFolderPath, "SavedModels/recoverTs.pt"))

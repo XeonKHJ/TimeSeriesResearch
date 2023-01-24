@@ -46,4 +46,4 @@ class RAECorrectorWithTrendTrainer(ITrainer):
         self.correctorTrainer.evalResult(validDataset, validsetLengths, 'RAECorrectorTrainer-WithTrend')
 
     def save(self):
-        self.correctorTrainer.save('RAECorrectorWithTrendTrainer')
+        self.correctorTrainer.save('RAECorrectorWithTrend.pt')
