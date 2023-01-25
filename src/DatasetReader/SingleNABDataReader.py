@@ -26,4 +26,4 @@ class SingleNABDataReader(IDatasetReader):
         for i in range(fulldata.__len__()):
             dataTensor[i][0:fulldata[i].__len__()] = torch.tensor(fulldata[i][:]).reshape([-1,1])
             dataTimestampLengths.append(fulldata[i].__len__())
-        return dataTensor, dataTimestampLengths
+        return dataTensor, dataTimestampLengths, dataTensor
