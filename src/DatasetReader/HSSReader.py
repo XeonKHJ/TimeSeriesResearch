@@ -31,4 +31,6 @@ class HSSReader(IDatasetReader):
         for i in range(fulldata.__len__()):
             dataTensor[i, 0:len(fulldata[i][0])] = torch.tensor(fulldata[i]).transpose(1,0)
             dataTimestampLengths.append(fulldata[i].__len__())
-        return dataTensor, dataTimestampLengths
+        labelTensor = dataTensor[:,:,1:2]
+        dataTensor = dataTensor[:,:,2:dataTensor.shape[2]]
+        return dataTensor, dataTimestampLengths, labelTensor
