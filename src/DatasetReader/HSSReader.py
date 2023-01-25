@@ -30,12 +30,12 @@ class HSSReader(IDatasetReader):
                     columnData.append(data[column].to_list())
                 fulldata.append(columnData)
                 maxDataLength = max(len(columnData[0]), maxDataLength)
-        fulldata.sort(key=(lambda elem:len(elem)), reverse=True)
+        fulldata.sort(key=(lambda elem:len(elem[0])), reverse=True)
         dataTensor = torch.zeros([fulldata.__len__(), maxDataLength, featureSize])
         # dataTensor = torch.tensor(fulldata)
         for i in range(fulldata.__len__()):
             dataTensor[i, 0:len(fulldata[i][0])] = torch.tensor(fulldata[i]).transpose(1,0)
-            dataTimestampLengths.append(fulldata[i].__len__())
+            dataTimestampLengths.append(len(fulldata[i][0]))
         labelTensor = dataTensor[:,:,1:2]
         dataTensor = dataTensor[:,:,2:dataTensor.shape[2]]
         return dataTensor, dataTimestampLengths, labelTensor
