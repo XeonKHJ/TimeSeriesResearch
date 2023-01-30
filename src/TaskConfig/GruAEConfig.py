@@ -10,13 +10,15 @@ import torch
 import os.path as path
 
 class GruAEConfig(ITaskConfig):
-    def __init__(self, modelFolderPath, isLogEnable):
+    def __init__(self, modelFolderPath, isLogEnable, inputFeatureCount=1, outputFeatureCount=1):
         self.modelFolderPath = modelFolderPath
         self.isLogEnable = isLogEnable
+        self.inputFeatureSize = inputFeatureCount
+        self.outputFeatureSize = outputFeatureCount
 
     def getConfig(self, isCuda = False):
-        feature_size = 1
-        output_size = 1
+        feature_size = self.inputFeatureSize
+        output_size = self.outputFeatureSize
         logger = PlotLogger(isPlotEnable=self.isLogEnable)
         mlModel = GruAutoencoder(feature_size,4,output_size,2)
         taskName = 'GruAEConfig'
