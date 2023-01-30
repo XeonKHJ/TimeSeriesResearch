@@ -30,16 +30,17 @@ class Trainer(ITrainer):
         for abnormalIdx in range(len(validsetLengths)):
             abnormalInputSet, abnormalLabelSet, abnormalLengths = self.mlModel.getInputTensor(
                 validDataset, validsetLengths)
-            abnormalOutput = self.mlModel(abnormalInputSet, abnormalLengths)    
-            tl = abnormalOutput[abnormalIdx]
-            t = abnormalLabelSet[abnormalIdx]
-            ts = t - tl
-            tlList = tl.reshape([-1]).tolist()
-            tList = t.reshape([-1]).tolist()
-            tsList = ts.reshape([-1]).tolist()
-            maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
-            # print("max diff\t", maxDiff)
-            self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName + '-' + storeName + "-" + str(abnormalIdx))
+            abnormalOutput = self.mlModel(abnormalInputSet, abnormalLengths) 
+            for featIdx in range(validDataset.shape[2]):
+                tl = abnormalOutput[abnormalIdx,:,featIdx]
+                t = abnormalLabelSet[abnormalIdx,:,featIdx]
+                ts = t - tl
+                tlList = tl.reshape([-1]).tolist()
+                tList = t.reshape([-1]).tolist()
+                tsList = ts.reshape([-1]).tolist()
+                maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
+                # print("max diff\t", maxDiff)
+                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName + '-' + storeName + "-idx" + str(abnormalIdx) + '-feat' + str(featIdx))
 
     def save(self, filename=None):
         if filename == None:
