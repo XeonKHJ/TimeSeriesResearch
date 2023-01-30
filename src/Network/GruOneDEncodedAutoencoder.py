@@ -13,13 +13,13 @@ class GruOneDEncodedAutoencoder(nn.Module):
         - output_size: number of output
         - num_layers: layers of LSTM to stack
     """
-    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1):
+    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1, reserveLengthForDecode=1):
         super().__init__()
         self.feature_size = feature_size
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.num_layers = num_layers
-        self.reserveLengthForDecode = 1000
+        self.reserveLengthForDecode = 200
 
         self.encodedFeatureSize = 20
 
@@ -35,13 +35,10 @@ class GruOneDEncodedAutoencoder(nn.Module):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, hiddenOutputX = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
         paddedX, paddedXLengthes = torchrnn.pad_packed_sequence(x, True)
-        paddedX = hiddenOutputX[self.num_layers - 1,:,:]
+        paddedX[:,0:self.reserveLengthForDecode, :] = paddedX[:,paddedX.shape[1] - self.reserveLengthForDecode:paddedX.shape[1] ,:]
+        paddedX[:, self.reserveLengthForDecode:paddedX.shape[1], :] = 0
         paddedX = self.lstmEncoderForward(paddedX)
-        # paddedX = self.relu(paddedX)
-        repeatedXZeros = torch.zeros([to_x.shape[0], to_x.shape[1], self.encodedFeatureSize]).cuda()
-        repeatedXZeros[:,0,:] = paddedX
-        # repeatedX = paddedX.repeat([1,to_x.shape[1]]).reshape([paddedX.shape[0], -1, self.seasonalityN])
-        packedX = torchrnn.pack_padded_sequence(repeatedXZeros, xTimestampSizes, True)
+        packedX = torchrnn.pack_padded_sequence(paddedX, xTimestampSizes, True)
         x, b = self.lstmDecoder(packedX)
 
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
