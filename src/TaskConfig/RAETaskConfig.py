@@ -9,7 +9,7 @@ import torch
 import os.path as path
 
 class RAETaskConfig(ITaskConfig):
-    def __init__(self, modelFolderPath, isPlotEnable):
+    def __init__(self, modelFolderPath, isPlotEnable=False):
         self.modelFolderPath = modelFolderPath
         self.isPlotEnable = isPlotEnable
 
