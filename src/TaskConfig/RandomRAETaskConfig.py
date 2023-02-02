@@ -16,7 +16,7 @@ class RandomRAETaskConfig(ITaskConfig):
         self.isPlotEnable = isPlotEnable
 
     def getConfig(self, isCuda = False):
-        feature_size = 1
+        feature_size = 2
         output_size = 1
         logger = PlotLogger(self.isPlotEnable)
         mlModel = LstmAutoencoder(feature_size,4,output_size,2)
@@ -27,7 +27,7 @@ class RandomRAETaskConfig(ITaskConfig):
             pass
         if torch.cuda.is_available():
             mlModel.cuda()
-        trainer = RandomRAETrainer(mlModel, logger, taskName + '-raemodel')
+        trainer = RandomRAETrainer(mlModel, logger, taskName + '-raemodel', 0.1)
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
         

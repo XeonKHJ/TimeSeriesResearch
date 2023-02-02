@@ -12,7 +12,7 @@ class RandomRAETrainer(ITrainer):
         self.tsLambda = tsLambda
         self.optimizer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
         self.step2Optimizer = None
-        self.raeTsPath = "SavedModels/raels.pt"
+        self.raeTsPath = "SavedModels/random_raels.pt"
         self.modelFolderPath = "SavedModels"
         self.epoch = 0
         self.logger = logger
@@ -34,17 +34,19 @@ class RandomRAETrainer(ITrainer):
                 else:
                     self.ts = torch.zeros(trainSet.shape, requires_grad=True)
             self.step2Optimizer = torch.optim.Adam([self.ts], lr=1e-3)
-        noise = torch.tensor(numpy.random.normal(0, 1, (trainSet.shape[0], trainSet.shape[1], trainSet.shape[2])), dtype=torch.float32)
+        noise = torch.tensor(numpy.random.normal(0, 1, (trainSet.shape[0], trainSet.shape[1], trainSet.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
         startTime = time.perf_counter()
-        tl = trainSet - self.ts + noise
-        x = self.aeModel(tl, trainSetLength)
+        tl = trainSet - self.ts
+        tlInput = torch.cat((tl, noise), 2)
+        x = self.aeModel(tlInput, trainSetLength)
         fowardTime = time.perf_counter() - startTime
         loss1 = self.lossFunc(tl, x)
         loss1.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
         
-        tl = self.aeModel(tl, trainSetLength)
+        tlInput = torch.cat((tl, noise), 2)
+        tl = self.aeModel(tlInput, trainSetLength)
         self.ts2 = trainSet - tl
         loss2 = self.tsLambda * (1 / torch.norm(self.ts2, p=1))
         loss2.backward()
@@ -63,7 +65,9 @@ class RandomRAETrainer(ITrainer):
         for abnormalIdx in range(len(validsetLengths)):
             abnormalInputSet, abnormalLabelSet, abnormalLengths = self.aeModel.getInputTensor(
                 validDataset, validsetLengths)
-            abnormalOutput = self.aeModel(abnormalInputSet, abnormalLengths)    
+            noise = torch.tensor(numpy.random.normal(0, 1, (abnormalInputSet.shape[0], abnormalInputSet.shape[1], abnormalInputSet.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
+            input = torch.cat((abnormalInputSet, noise), 2)
+            abnormalOutput = self.aeModel(input, abnormalLengths)    
             tl = abnormalOutput[abnormalIdx]
             t = abnormalLabelSet[abnormalIdx]
             ts = t - tl
