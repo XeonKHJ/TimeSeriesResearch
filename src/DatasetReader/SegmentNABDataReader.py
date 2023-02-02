@@ -22,9 +22,10 @@ class SegmentNABDataReader(IDatasetReader):
             data = pandas.read_csv(filePath)
             datasetItem = data.value.to_list()
             fulldata.append(datasetItem)
-            maxDataLength = max(datasetItem.__len__(), maxDataLength)
         
         fulldata = self.segement(fulldata)
+        for data in fulldata:
+            maxDataLength = max(data.__len__(), maxDataLength)
         fulldata.sort(key=(lambda elem:len(elem)), reverse=True)
         
         dataTensor = torch.zeros([fulldata.__len__(), maxDataLength, featureSize])
