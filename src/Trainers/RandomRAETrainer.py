@@ -37,7 +37,7 @@ class RandomRAETrainer(ITrainer):
         noise = torch.tensor(numpy.random.normal(0, 1, (trainSet.shape[0], trainSet.shape[1], trainSet.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
         startTime = time.perf_counter()
         tl = trainSet - self.ts
-        tlInput = torch.cat((tl, noise), 2)
+        tlInput = torch.cat((tl, noise), 2).detach()
         x = self.aeModel(tlInput, trainSetLength)
         fowardTime = time.perf_counter() - startTime
         loss1 = self.lossFunc(tl, x)
@@ -80,5 +80,5 @@ class RandomRAETrainer(ITrainer):
             self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName+ '-raetrainer-' + storeName + "-" + str(abnormalIdx))
 
     def save(self, filename=None):
-        torch.save(self.ts, self.raeTsPath)
+        # torch.save(self.ts, self.raeTsPath)
         torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))
