@@ -27,7 +27,7 @@ class RandomRAETaskConfig(ITaskConfig):
             pass
         if torch.cuda.is_available():
             mlModel.cuda()
-        trainer = RandomRAETrainer(mlModel, logger, taskName + '-raemodel', 0.1)
+        trainer = RandomRAETrainer(mlModel, logger, taskName + '-raemodel', 1e-9)
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
         

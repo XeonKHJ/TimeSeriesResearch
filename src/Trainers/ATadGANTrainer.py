@@ -4,9 +4,10 @@ import time
 import os.path as path
 import numpy
 
-class RandomRAETrainer(ITrainer):
-    def __init__(self, mlModel, logger, taskName, tsLambda=0.1):
+class ATadGANTrianer(ITrainer):
+    def __init__(self, mlModel, staticFeatureModel, logger, taskName, tsLambda=0.1):
         self.aeModel = mlModel
+        self.staticFeatureModel = staticFeatureModel
         self.lossFunc = torch.nn.MSELoss()
         self.ts = torch.zeros([0])
         self.tsLambda = tsLambda
@@ -19,7 +20,6 @@ class RandomRAETrainer(ITrainer):
         self.taskName = taskName
 
     def train(self, trainSet, trainSetLength, labelSet):
-        self.epoch += 1
         self.aeModel.train()
         if self.ts.shape == torch.Size([0]):
             try:
@@ -42,9 +42,9 @@ class RandomRAETrainer(ITrainer):
         x = self.aeModel(tlInput, trainSetLength)
         fowardTime = time.perf_counter() - startTime
         loss1 = self.lossFunc(tl, x)
-        loss2 = self.lossFunc(x, trainSet)
+        loss2 = self.lossFunc(tl, trainSet)
         tsLoss = self.tsLambda * ( self.lossFunc(self.ts, torch.ones(self.ts.shape, device=torch.device('cuda'))))
-        loss = loss1 + 10 * loss2 + tsLoss
+        loss = loss1 + 0.1 * loss2 + tsLoss
         loss.backward()
         self.optimizer.step()
         self.step2Optimizer.step()
@@ -54,7 +54,7 @@ class RandomRAETrainer(ITrainer):
 
         backwardTime = time.perf_counter() - startTime
         # loss = loss1 + tsLoss
-        print("epoch\t",self.epoch,"\tloss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item(), ".7f"), "\t", format(tsLoss.item() / self.tsLambda, ".7f"), "\tts\t", format(torch.norm(self.ts, p=1).item(), ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
+        print("loss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item(), ".7f"), "\t", format(tsLoss.item() / self.tsLambda, ".7f"), "\tts\t", format(torch.norm(self.ts, p=1).item(), ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
         return loss
 
     def evalResult(self, validDataset, validsetLengths, storeName=None):
@@ -78,4 +78,4 @@ class RandomRAETrainer(ITrainer):
 
     def save(self, filename=None):
         # torch.save(self.ts, self.raeTsPath)
-        # torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))
+        torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))

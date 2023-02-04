@@ -16,10 +16,13 @@ from DatasetReader.NABReader import NABReader
 import ArgParser
 from TaskConfig.OneDAutoencoderConfig import OneDAutoencoderConfig
 from TaskConfig.StaticAeConfig import StaticAeConfig
+from TaskConfig.RandomRAETaskConfig import RandomRAETaskConfig
+from TaskConfig.TimeGanConfig import TimeGanConfig
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
 # normalDataReader = NABReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
-normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+# normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = HSSReader("../datasets/preprocessed/HSS")
 # abnormalDataReader = HSSReader("../datasets/preprocessed/HSS", isNormal=False)
 abnormalDataReader = NABReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly")
@@ -41,7 +44,9 @@ if __name__ == '__main__':
     normalDataset, normalDatasetLengths, normalLabels = normalDataReader.read()
     abnormalDataset, abnormalDatasetLengths, abnormalLabels = abnormalDataReader.read()
 
-    config = RAETaskConfig(modelFolderPath, isLoggerEnable)
+    # config = TimeGanConfig(modelFolderPath, isLoggerEnable)
+    config = RandomRAETaskConfig(modelFolderPath, isLoggerEnable)
+    # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
     # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
@@ -70,7 +75,7 @@ if __name__ == '__main__':
     currentIdx = 0
     datasetSize = toTrainDataset.shape[0]
     epoch = 0
-    while True:
+    while epoch <= 10000:
         if datasetSize - batchSize == 0:
             startIdx = 0
         else:
