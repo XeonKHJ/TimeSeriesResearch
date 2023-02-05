@@ -1,5 +1,6 @@
 from Logger.PlotLogger import PlotLogger
 from Network.LstmAutoencoder import LstmAutoencoder
+from Network.BiGruAutoencoder import BiGruAutoencoder
 from TaskConfig.ITaskConfig import ITaskConfig
 from Trainers.RAETrainer import RAETrainer
 from DataNormalizer.DataNormalizer import DataNormalizer
@@ -19,7 +20,7 @@ class RandomRAETaskConfig(ITaskConfig):
         feature_size = 2
         output_size = 1
         logger = PlotLogger(self.isPlotEnable)
-        mlModel = LstmAutoencoder(feature_size,4,output_size,2)
+        mlModel = BiGruAutoencoder(feature_size,4,output_size,2)
         taskName = 'RandomRAETask'
         try:
             mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + '-raemodel' + ".pt")))

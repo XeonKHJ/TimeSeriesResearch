@@ -31,9 +31,9 @@ class RandomRAETrainer(ITrainer):
                     self.ts = torch.load(self.raeTsPath)
             except:
                 if torch.cuda.is_available():
-                    self.ts = torch.zeros(trainSet.shape, requires_grad=True, device=torch.device('cuda'))
+                    self.ts = torch.rand(trainSet.shape, requires_grad=True, device=torch.device('cuda'))
                 else:
-                    self.ts = torch.zeros(trainSet.shape, requires_grad=True)
+                    self.ts = torch.rand(trainSet.shape, requires_grad=True)
             self.step2Optimizer = torch.optim.Adam([self.ts], lr=1e-3)
         noise = torch.tensor(numpy.random.normal(0, 1, (trainSet.shape[0], trainSet.shape[1], trainSet.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
         startTime = time.perf_counter()
@@ -43,7 +43,7 @@ class RandomRAETrainer(ITrainer):
         fowardTime = time.perf_counter() - startTime
         loss1 = self.lossFunc(tl, x)
         loss2 = self.lossFunc(x, trainSet)
-        tsLoss = self.tsLambda * ( self.lossFunc(self.ts, torch.ones(self.ts.shape, device=torch.device('cuda'))))
+        tsLoss = self.tsLambda * (1/(torch.norm(self.ts, p=1)))
         loss = loss1 + 10 * loss2 + tsLoss
         loss.backward()
         self.optimizer.step()
@@ -77,5 +77,6 @@ class RandomRAETrainer(ITrainer):
             self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName+ '-raetrainer-' + storeName + "-" + str(abnormalIdx))
 
     def save(self, filename=None):
+        pass
         # torch.save(self.ts, self.raeTsPath)
         # torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))
