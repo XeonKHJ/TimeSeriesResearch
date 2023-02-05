@@ -5,7 +5,7 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class BiGruAutoencoder(nn.Module):
+class TimeGan(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -19,21 +19,22 @@ class BiGruAutoencoder(nn.Module):
         self.hidden_size = hidden_size
         self.output_size = output_size
 
-        self.lstmEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, bidirectional=True) # utilize the LSTM model in torch.nn 
-        self.fc = nn.Linear(2*hidden_size, hidden_size)
-        self.lstmDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True, bidirectional=True) 
+        self.staticFeatureModel = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, bidirectional=False)
+        self.tempFeatureModel = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, bidirectional=True) # utilize the LSTM model in torch.nn 
+        self.lstmDecoder = nn.GRU(2*hidden_size, hidden_size, num_layers, batch_first=True, bidirectional=True) 
         
+        self.generator = nn.GRU(2*hidden_size, hidden_size, num_layers, batch_first=True, bidirectional=True)
+
+
         self.forwardCalculation = nn.Linear(2*hidden_size,output_size)
         self.finalCalculation = nn.Sigmoid()
         self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
-        x, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
-        x, _ = torchrnn.pad_packed_sequence(x, batch_first=True)
-        x = self.fc(x)
-        x = torchrnn.pack_padded_sequence(x, xTimestampSizes, True)
-        x, b = self.lstmDecoder(x)
+        staticFeature = self.staticFeatureModel(x)
+        tempFeature = self.tempFeatureModel(x)
+        
 
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
