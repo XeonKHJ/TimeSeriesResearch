@@ -4,21 +4,21 @@ import pandas
 import torch
 from DatasetReader.DatasetReader import IDatasetReader
 
-class SegmentNABDataReader(IDatasetReader):
-    def __init__(self, filePath, windowSize = 100, step=1) -> None:
+class SegmentNABFolderDataReader(IDatasetReader):
+    def __init__(self, folderPath, windowSize = 100, step=1) -> None:
         super().__init__()
-        self.fileList = [filePath]
+        self.folderPath = folderPath
         self.windowSize = windowSize
         self.step = step
 
     def read(self):
-        fileList = self.fileList
+        fileList = os.listdir(self.folderPath)
         fulldata = list()
         dataTimestampLengths = list()
         featureSize = 1
         maxDataLength = 0
         for file in fileList:
-            filePath = file
+            filePath = os.path.join(self.folderPath, file)
             data = pandas.read_csv(filePath)
             datasetItem = data.value.to_list()
             fulldata.append(datasetItem)

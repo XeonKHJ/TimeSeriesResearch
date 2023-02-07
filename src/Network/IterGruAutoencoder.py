@@ -5,7 +5,8 @@ import torch.nn.utils.rnn as torchrnn
 import torch.optim as optim
 import numpy
 
-class GruAutoencoder(nn.Module):
+# decode part allows pass output from previous rnn unit to next rnn unit.
+class IterGruAutoencoder(nn.Module):
     """
         Parameters：
         - input_size: feature size
@@ -29,17 +30,20 @@ class GruAutoencoder(nn.Module):
 
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
-        x, b = self.gruEncoder(x)  # _x is input, size (seq_len, batch, input_size)
-        paddedX, length = torchrnn.pad_packed_sequence(x, True)
-        paddedX = self.encodeFc(paddedX)
-        packedPaddedX = torchrnn.pack_padded_sequence(paddedX, xTimestampSizes, True)
-        x, b = self.gruDecoder(packedPaddedX)
-        
-        x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
-    
-        x = self.forwardCalculation(x)
-        # x = self.finalCalculation(x)
+        x, hiddenOutput = self.gruEncoder(x)  # _x is input, size (seq_len, batch, input_size)
+        paddedX = torchrnn.pad_packed_sequence(x, True)
+        encoded = hiddenOutput[hiddenOutput.shape[0]-1, :, :].reshape([hiddenOutput.shape[1], 1, -1])
+        paddedX = self.encodeFc(encoded)
 
+        decoderOutput = torch.zeros([to_x.shape[0], to_x.shape[1], self.hidden_size], device=torch.device('cuda'), requires_grad=True)
+        decoderOutput[:,0:1,:] = x[:, to_x.shape[0]-1:to_x.shape[0],:]
+        decoderOutput, _ = self.gruDecoder(decoderOutput)
+        # decoderOutput[:, 0:1, :], _ = self.gruDecoder(encoded)
+        # # for idx in range(1, to_x.shape[1]):
+        # #     x, hiddenOutput = self.gruDecoder(decoderOutput[:, idx-1:idx, :])
+        # #     decoderOutput[:, idx:idx+1, :] = x
+        
+        x = self.forwardCalculation(decoderOutput)
         return x
 
     def getInputTensor(self, dataset, datasetLengths):
