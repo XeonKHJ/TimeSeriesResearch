@@ -37,6 +37,38 @@ abnormalDataReader = NABReader("../datasets/preprocessed//NAB/artificialWithAnom
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
+def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
+    # 验证
+    mlModel.eval()
+    # noise = torch.tensor(numpy.random.normal(0, 1, (abnormalDataset.shape[0], abnormalDataset.shape[1], abnormalDataset.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
+    validDataset = validDataset.cuda()
+    # evalSet = torch.cat((abnormalDataset, noise), 2)
+    reconstructOutput = mlModel(validDataset, abnormalDatasetLengths)
+
+    for threadHole in [0.01, 0.001]:
+        compareTensor = torch.abs(reconstructOutput - validDataset)
+        compareTensor = ~(compareTensor > threadHole)
+
+        truePositive = 0
+        falsePostive = 0
+        falseNegative = 0
+        trueNegative = 0
+        for evalIdx in range(reconstructOutput.shape[1]):
+            curData = (compareTensor[:, evalIdx, :].bool())
+            curLabel = (labels[:, evalIdx, :].bool())
+
+            truePositive += (curData * curLabel).sum().item()    
+            trueNegative += ((~(curData.bool())) * (~(curLabel.bool()))).sum().item()
+
+            temp = curLabel.int() - curData.int()
+            falseNegative += (temp == 1).sum().item()
+            falsePostive += (temp == -1).sum().item()
+
+        precision = truePositive / (truePositive + falsePostive)
+        recall = truePositive / (truePositive + falseNegative)
+        f1 = 2*(recall * precision) / (recall + precision)
+        print('th\t', threadHole, '\teval\t', '\tprecision\t', format(precision, '.3f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.3f'))    
+
 if __name__ == '__main__':
     if torch.cuda.is_available():
         print("CUDA is avaliable.")
@@ -101,13 +133,5 @@ if __name__ == '__main__':
             # trainer.evalResult(normalDataset, normalDatasetLengths, 'normalset')
             trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalset')
             trainer.save()
-            # 验证
-            mlModel.eval()
-            # noise = torch.tensor(numpy.random.normal(0, 1, (abnormalDataset.shape[0], abnormalDataset.shape[1], abnormalDataset.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
-            abnormalDataset = abnormalDataset.cuda()
-            # evalSet = torch.cat((abnormalDataset, noise), 2)
-            reconstructOutput = mlModel(abnormalDataset, abnormalDatasetLengths)
-            compareTensor = torch.abs(reconstructOutput - abnormalDataset)
-            compareTensor = (compareTensor > 0.001)
-            result = (compareTensor == abnormallabels)
+            evalutaion(mlModel, abnormalDataset, abnormalDatasetLengths, abnormallabels)
         epoch += 1
