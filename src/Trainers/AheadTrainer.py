@@ -54,10 +54,8 @@ class Trainer(ITrainer):
 
     def reconstruct(self, mlModel, validDataset, validsetLength):
         reconstructSeqs = []
-        for idx in range(0, validDataset.shape[1], 100):
-            curInput = validDataset[:,idx:idx+100,:]
-            lengths = torch.tensor(curInput.shape[1]).repeat(curInput.shape[0])
-            output = mlModel(validDataset[:,idx:idx+100,:], lengths)
+        for idx in range(0, validDataset.shape[0], 100):
+            output = mlModel(validDataset[:,idx:idx+100,:])
             reconstructSeqs.append(output)
         reconstructed = torch.cat(reconstructSeqs, 1)
         return reconstructed

@@ -12,12 +12,14 @@ class OffsetBiGruAutoencoder(nn.Module):
         - hidden_size: number of hidden units
         - output_size: number of output
         - num_layers: layers of LSTM to stack
+        - ahead: use x data to predict next x data
     """
-    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1):
+    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1, ahead=1):
         super().__init__()
         self.feature_size = feature_size
         self.hidden_size = hidden_size
         self.output_size = output_size
+        self.aheadCount = ahead
 
         self.flstmEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
         self.rlstmEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True)

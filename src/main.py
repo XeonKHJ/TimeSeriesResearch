@@ -25,8 +25,8 @@ from Trainers.CorrectorTrainer import CorrectorTrainer
 
 # normalDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
 # normalDataReader = SegmentNABFolderDataReader("../../NAB/data/realAWSCloudwatch/")
-normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
-# normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+# normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
+normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = HSSReader("../datasets/preprocessed/HSS")
@@ -88,14 +88,14 @@ if __name__ == '__main__':
 
     # config = TimeGanConfig(modelFolderPath, isLoggerEnable)
     # config = RandomRAETaskConfig(modelFolderPath, isLoggerEnable)
-    config = RAETaskConfig(modelFolderPath, isLoggerEnable)
+    # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
     # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
     # config = OffsetGruAEConfig(modelFolderPath, isLoggerEnable, len(normalDataset[0][0]), len(normalDataset[0][0]), fileList)
     # config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
-    # config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()

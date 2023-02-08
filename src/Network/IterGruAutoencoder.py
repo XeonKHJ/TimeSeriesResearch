@@ -39,11 +39,12 @@ class IterGruAutoencoder(nn.Module):
         # paddedX = self.encodeFc(paddedX)
 
         # decoderOutput = torch.zeros([to_x.shape[0], to_x.shape[1], self.hidden_size], device=torch.device('cuda'), requires_grad=True)
-        encoded, encodedH = self.gruDecoder(encoded)
-        paddedX[:,0,:] = encoded.reshape(encoded.shape[0], -1)
+        encoded, encodedH = self.gruDecoder(encoded, hiddenOutput)
+        decoderOutput = encoded
         for idx in range(1, to_x.shape[1]):
-            paddedX[:, idx:idx+1, :], encodedH = self.gruDecoder(paddedX[:, idx-1, :].reshape(paddedX.shape[0], 1, -1), encodedH)
-        x = self.forwardCalculation(paddedX)
+            decoderOutputUnit, encodedH = self.gruDecoder(decoderOutput[:, idx-1, :].reshape(paddedX.shape[0], 1, -1), encodedH)
+            decoderOutput = torch.cat((decoderOutput, decoderOutputUnit), 1)
+        x = self.forwardCalculation(decoderOutput)
         return x
 
     def getInputTensor(self, dataset, datasetLengths):
