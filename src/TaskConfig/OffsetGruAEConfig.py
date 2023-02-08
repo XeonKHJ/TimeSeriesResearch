@@ -1,3 +1,4 @@
+from DataNormalizer.StandardScalerDataNormalizer import StandardScalerDataNormalizer
 from Network.OffsetBiGruAutoencoder import OffsetBiGruAutoencoder
 from Logger.PlotLogger import PlotLogger
 from TaskConfig.ITaskConfig import ITaskConfig
@@ -10,11 +11,12 @@ import torch
 import os.path as path
 
 class OffsetGruAEConfig(ITaskConfig):
-    def __init__(self, modelFolderPath, isLogEnable, inputFeatureCount=1, outputFeatureCount=1):
+    def __init__(self, modelFolderPath, isLogEnable, inputFeatureCount=1, outputFeatureCount=1, fileList=[]):
         self.modelFolderPath = modelFolderPath
         self.isLogEnable = isLogEnable
         self.inputFeatureSize = inputFeatureCount
         self.outputFeatureSize = outputFeatureCount
+        self.fileList = fileList
 
     def getConfig(self, isCuda = False):
         feature_size = self.inputFeatureSize
@@ -29,10 +31,10 @@ class OffsetGruAEConfig(ITaskConfig):
         if torch.cuda.is_available():
             mlModel.cuda()
         # trainer = RAETrainer(mlModel, logger, taskName, 10)
-        trainer = Trainer(mlModel, taskName, logger, 1e-3)
+        trainer = Trainer(mlModel, taskName, logger, 1e-3, self.fileList)
         datasetSeperator = NoSepDataSeperator()
         # logger = PlotLogger()
         
-        dataNormalizer = DataNormalizer()
+        dataNormalizer = StandardScalerDataNormalizer()
         
         return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName

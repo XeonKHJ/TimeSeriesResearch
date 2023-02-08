@@ -44,7 +44,7 @@ class RandomRAETrainer(ITrainer):
         loss1 = self.lossFunc(tl, x)
         loss2 = self.lossFunc(x, trainSet)
         tsLoss = self.tsLambda * (1/(torch.norm(self.ts, p=1)))
-        loss = loss1 + 10 * loss2 + tsLoss
+        loss = loss1 + 0.1 * loss2 + tsLoss
         loss.backward()
         self.optimizer.step()
         self.step2Optimizer.step()
@@ -70,7 +70,7 @@ class RandomRAETrainer(ITrainer):
             ts = t - tl
             tlList = tl.reshape([-1]).tolist()
             tList = t.reshape([-1]).tolist()
-            tsList = ts.reshape([-1]).tolist()
+            tsList = ts.abs().reshape([-1]).tolist()
             # selftsList = self.ts[0].reshape([-1]).tolist()
             maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
             print("max diff\t", maxDiff)
@@ -79,4 +79,4 @@ class RandomRAETrainer(ITrainer):
     def save(self, filename=None):
         pass
         # torch.save(self.ts, self.raeTsPath)
-        # torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))
+        torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))

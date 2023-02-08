@@ -1,4 +1,4 @@
-from Network.GruAutoencoder import GruAutoencoder
+from Network.IterGruAutoencoder import IterGruAutoencoder
 from Logger.PlotLogger import PlotLogger
 from TaskConfig.ITaskConfig import ITaskConfig
 from Trainers.RAETrainer import RAETrainer
@@ -9,7 +9,7 @@ from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 import torch
 import os.path as path
 
-class GruAEConfig(ITaskConfig):
+class ItrGruAEConfig(ITaskConfig):
     def __init__(self, modelFolderPath, isLogEnable, inputFeatureCount=1, outputFeatureCount=1, fileList=[]):
         self.modelFolderPath = modelFolderPath
         self.isLogEnable = isLogEnable
@@ -21,8 +21,8 @@ class GruAEConfig(ITaskConfig):
         feature_size = self.inputFeatureSize
         output_size = self.outputFeatureSize
         logger = PlotLogger(isPlotEnable=self.isLogEnable)
-        mlModel = GruAutoencoder(feature_size,4,output_size,2)
-        taskName = 'GruAEConfig'
+        mlModel = IterGruAutoencoder(feature_size,4,output_size,2)
+        taskName = 'ItrGruAEConfig'
         try:
             mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))
         except:

@@ -18,7 +18,7 @@ class PlotLogger(ILogger):
             matplotlib.pyplot.show()
         matplotlib.pyplot.close()
 
-    def logResults(self, datas, labels, picname=None):
+    def logResults(self, datas, labels, picname=None, folderName = None):
         _, ax = matplotlib.pyplot.subplots()
         for i in range(len(datas)):
             ax.plot(datas[i], label = labels[i])
@@ -26,7 +26,11 @@ class PlotLogger(ILogger):
         if self.isPlotEnable:
             matplotlib.pyplot.show()
         if picname != None:
-            matplotlib.pyplot.savefig(os.path.join('SavedPics', picname))
+            if folderName == None:
+                matplotlib.pyplot.savefig(os.path.join('SavedPics', picname))
+            else:
+                savePath = os.path.join(folderName, picname)
+                matplotlib.pyplot.savefig(savePath)
             # print(picname, " saved.")
         matplotlib.pyplot.close()
 

@@ -19,28 +19,34 @@ class OffsetBiGruAutoencoder(nn.Module):
         self.hidden_size = hidden_size
         self.output_size = output_size
 
-        self.lstmEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, bidirectional=True) # utilize the LSTM model in torch.nn 
-        self.lstmDecoder = nn.GRU(2*hidden_size, hidden_size, num_layers, batch_first=True, bidirectional=True) 
+        self.flstmEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
+        self.rlstmEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True)
+        self.lstmDecoder = nn.GRU(2*hidden_size, hidden_size, num_layers, batch_first=True) 
         
-        self.forwardCalculation = nn.Linear(2*hidden_size,output_size)
+        self.forwardCalculation = nn.Linear(hidden_size,output_size)
         self.finalCalculation = nn.Sigmoid()
         self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
+        rTo_x = to_x.flip(1)
         packedX = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
-        packedX, b = self.lstmEncoder(packedX)
-        padX, lengths = torchrnn.pad_packed_sequence(packedX, batch_first=True)
-        padX[:, 0:padX.shape[1]-1, 0:self.feature_size] = padX[:, 1:padX.shape[1], 0:self.feature_size]
-        padX[:, 1:padX.shape[1], self.feature_size:2*self.feature_size] = padX[:, 0:padX.shape[1]-1, self.feature_size:2*self.feature_size]
-        padX[:, padX.shape[1]-1, 0:self.feature_size] = 0
-        padX[:, 0, self.feature_size:2*self.feature_size] = 0
-        
-        packedX = torchrnn.pack_padded_sequence(padX, xTimestampSizes, True)
+        rPackedX =torchrnn.pack_padded_sequence(rTo_x, xTimestampSizes, True)
+        fPackedX, fb = self.flstmEncoder(packedX)
+        rPackedX, rb = self.rlstmEncoder(rPackedX)
+        fPadedX, _ = torchrnn.pad_packed_sequence(fPackedX, batch_first=True)
+        rPadedX, _ = torchrnn.pad_packed_sequence(rPackedX, batch_first=True)
+        rPadedX = rPadedX.flip(1)
+        fPadedX[:, 0:fPadedX.shape[1]-1, :] = fPadedX[:, 1:fPadedX.shape[1], :]
+        rPadedX[:, 1:rPadedX.shape[1], :] = rPadedX[:, 0:rPadedX.shape[1]-1, :]
+        fPadedX[:, fPadedX.shape[1]-1, :] = 0
+        rPadedX[:, 0, :] = 0
+        padedX = torch.cat((fPadedX, rPadedX), 2)
+        packedX = torchrnn.pack_padded_sequence(padedX, xTimestampSizes, True)
         packedX, b = self.lstmDecoder(packedX)
         padX, lengths = torchrnn.pad_packed_sequence(packedX, batch_first=True)
 
         padX = self.forwardCalculation(padX)
-        padX = self.finalCalculation(padX)
+        # padX = self.finalCalculation(padX)
 
         return padX
 
