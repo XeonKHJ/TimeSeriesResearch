@@ -38,24 +38,5 @@ class GruAutoencoder(nn.Module):
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
         x = self.forwardCalculation(x)
-        # x = self.finalCalculation(x)
 
         return x
-
-    def getInputTensor(self, dataset, datasetLengths):
-        inputList = torch.split(dataset, 1, 1)
-        inputLengths = (numpy.array(datasetLengths)).tolist()
-        outputDataset = torch.zeros([dataset.shape[0], dataset.shape[1] , dataset.shape[2]])
-        inputDataset = torch.zeros([dataset.shape[0], dataset.shape[1], dataset.shape[2]])
-        for i in range(inputList.__len__()):
-            for j in range(outputDataset.shape[0]):
-                outputDataset[j][i] = inputList[i][j]
-
-        for i in range(inputList.__len__()):
-            for j in range(outputDataset.shape[0]):
-                inputDataset[j][i] = inputList[i][j]
-
-        if self.isCudaSupported:
-            return inputDataset.cuda(), outputDataset.cuda(), inputLengths
-        else:
-            return inputDataset, outputDataset, inputLengths

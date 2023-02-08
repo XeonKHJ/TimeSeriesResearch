@@ -25,8 +25,8 @@ from Trainers.CorrectorTrainer import CorrectorTrainer
 
 # normalDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
 # normalDataReader = SegmentNABFolderDataReader("../../NAB/data/realAWSCloudwatch/")
-# normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
-normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
+# normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = HSSReader("../datasets/preprocessed/HSS")
@@ -55,11 +55,11 @@ if __name__ == '__main__':
     # config = RandomRAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
-    config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
+    # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
     # config = OffsetGruAEConfig(modelFolderPath, isLoggerEnable, len(normalDataset[0][0]), len(normalDataset[0][0]), fileList)
-    # config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
     # config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
 
     # load config
@@ -69,10 +69,8 @@ if __name__ == '__main__':
     dataNormalizer.addDatasetToRef(abnormalDataset)
     normalDataset = dataNormalizer.normalizeDataset(normalDataset)
     abnormalDataset = dataNormalizer.normalizeDataset(abnormalDataset)
-    trainDataset = datasetSeperator.getTrainningSet(normalDataset)
-    trainsetLengths = datasetSeperator.getTrainningSet(normalDatasetLengths)
-    validDataset = datasetSeperator.getValidationSet(normalDataset)
-    validsetLengths = datasetSeperator.getValidationSet(normalDatasetLengths)
+    trainDataset, trainsetLengths = datasetSeperator.getTrainningSet(normalDataset, normalDatasetLengths)
+    validDataset, validsetLengths = datasetSeperator.getValidationSet(normalDataset, normalDatasetLengths)
     trainer.setAbnormal(abnormalDataset, abnormalDatasetLengths)
 
     # save pic
@@ -81,11 +79,11 @@ if __name__ == '__main__':
         logger.logResults([curList], ['real'], path.splitext(path.basename(fileList[i]))[0], "OgPics")
 
     # start trainning
-    toTrainDataset, labelDataset, labelDatasetLengths = mlModel.getInputTensor(trainDataset, trainsetLengths)
+    # toTrainDataset, labelDataset, labelDatasetLengths = mlModel.getInputTensor(trainDataset, trainsetLengths)
     mlModel.train()
     batchSize = 5000
     currentIdx = 0
-    datasetSize = toTrainDataset.shape[0]
+    datasetSize = trainDataset.shape[0]
     epoch = 0
     keepTrainning = True
     while keepTrainning:
@@ -95,10 +93,10 @@ if __name__ == '__main__':
             startIdx = currentIdx % (datasetSize - batchSize)
         endIdx = startIdx + batchSize
         currentIdx += batchSize 
-        trainSet = toTrainDataset[startIdx:endIdx]
-        labelSet = labelDataset[startIdx:endIdx]
-        labelSetLengths = labelDatasetLengths[startIdx:endIdx]
-        loss = trainer.train(trainSet, labelSetLengths, labelSet)
+        trainSet = trainDataset[startIdx:endIdx]
+        trainningLengths = trainsetLengths[startIdx:endIdx]
+        labelSet = labels[startIdx:endIdx]
+        loss = trainer.train(trainSet, trainningLengths, labelSet)
         if epoch % 300 == 0:
             # trainer.evalResult(normalDataset, normalDatasetLengths, 'normalset')
             trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalset')

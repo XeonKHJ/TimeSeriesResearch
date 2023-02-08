@@ -18,7 +18,7 @@ class Trainer(ITrainer):
         startTime = time.perf_counter()
         output = self.mlModel(trainSet, trainSetLength)
         outputedTime = time.perf_counter()
-        loss = self.lossFunc(output, labelSet)
+        loss = self.lossFunc(output, trainSet)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
@@ -28,24 +28,22 @@ class Trainer(ITrainer):
 
     def evalResult(self, validDataset, validsetLengths, storeName=None):
         self.mlModel.eval()
-        for abnormalIdx in range(len(validsetLengths)):
-            abnormalInputSet, abnormalLabelSet, abnormalLengths = self.mlModel.getInputTensor(
-                validDataset, validsetLengths)
-            abnormalOutput = self.mlModel(abnormalInputSet, abnormalLengths) 
-            if abnormalIdx<len(self.fileList):
-                ogFileName = "-"+ path.splitext(path.basename(self.fileList[abnormalIdx]))[0]
+        for validIdx in range(len(validsetLengths)):
+            validOutput = self.mlModel(validDataset, validsetLengths) 
+            if validIdx<len(self.fileList):
+                ogFileName = "-"+ path.splitext(path.basename(self.fileList[validIdx]))[0]
             else:
                 ogFileName = ""
             for featIdx in range(validDataset.shape[2]):
-                tl = abnormalOutput[abnormalIdx,:,featIdx]
-                t = abnormalLabelSet[abnormalIdx,:,featIdx]
+                tl = validOutput[validIdx,:,featIdx]
+                t = validDataset[validIdx,:,featIdx]
                 ts = t - tl
-                tlList = tl.reshape([-1])[0:validsetLengths[abnormalIdx]].tolist()
-                tList = t.reshape([-1])[0:validsetLengths[abnormalIdx]].tolist()
-                tsList = ts.reshape([-1])[0:validsetLengths[abnormalIdx]].abs().tolist()
-                maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
+                tlList = tl.reshape([-1])[0:validsetLengths[validIdx]].tolist()
+                tList = t.reshape([-1])[0:validsetLengths[validIdx]].tolist()
+                tsList = ts.reshape([-1])[0:validsetLengths[validIdx]].abs().tolist()
+                # maxDiff = (torch.abs(abnormalLabelSet - validOutput)).max().item()
                 # print("max diff\t", maxDiff)
-                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName + '-' + storeName + "-idx" + str(abnormalIdx) + '-feat' + str(featIdx) +ogFileName )
+                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName + '-' + storeName + "-idx" + str(validIdx) + '-feat' + str(featIdx) +ogFileName )
 
     def save(self, filename=None):
         if filename == None:

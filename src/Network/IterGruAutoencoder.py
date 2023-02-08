@@ -31,19 +31,19 @@ class IterGruAutoencoder(nn.Module):
     def forward(self, to_x, xTimestampSizes):
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, hiddenOutput = self.gruEncoder(x)  # _x is input, size (seq_len, batch, input_size)
-        paddedX = torchrnn.pad_packed_sequence(x, True)
+        paddedX, _ = torchrnn.pad_packed_sequence(x, True)
         encoded = hiddenOutput[hiddenOutput.shape[0]-1, :, :].reshape([hiddenOutput.shape[1], 1, -1])
-        paddedX = self.encodeFc(encoded)
+        encoded = self.encodeFc(encoded)
+        paddedX[:,0,:] = paddedX[:,paddedX.shape[1]-1, :]
+        paddedX[:,1:to_x.shape[1],:] = 0
+        # paddedX = self.encodeFc(paddedX)
 
-        decoderOutput = torch.zeros([to_x.shape[0], to_x.shape[1], self.hidden_size], device=torch.device('cuda'), requires_grad=True)
-        decoderOutput[:,0:1,:] = x[:, to_x.shape[0]-1:to_x.shape[0],:]
-        decoderOutput, _ = self.gruDecoder(decoderOutput)
-        # decoderOutput[:, 0:1, :], _ = self.gruDecoder(encoded)
-        # # for idx in range(1, to_x.shape[1]):
-        # #     x, hiddenOutput = self.gruDecoder(decoderOutput[:, idx-1:idx, :])
-        # #     decoderOutput[:, idx:idx+1, :] = x
-        
-        x = self.forwardCalculation(decoderOutput)
+        # decoderOutput = torch.zeros([to_x.shape[0], to_x.shape[1], self.hidden_size], device=torch.device('cuda'), requires_grad=True)
+        encoded, encodedH = self.gruDecoder(encoded)
+        paddedX[:,0,:] = encoded.reshape(encoded.shape[0], -1)
+        for idx in range(1, to_x.shape[1]):
+            paddedX[:, idx:idx+1, :], encodedH = self.gruDecoder(paddedX[:, idx-1, :].reshape(paddedX.shape[0], 1, -1), encodedH)
+        x = self.forwardCalculation(paddedX)
         return x
 
     def getInputTensor(self, dataset, datasetLengths):
