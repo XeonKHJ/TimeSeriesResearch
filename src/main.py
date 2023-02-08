@@ -47,7 +47,7 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
 
     for threadHole in [0.01, 0.001]:
         compareTensor = torch.abs(reconstructOutput - validDataset)
-        compareTensor = ~(compareTensor > threadHole)
+        compareTensor = (compareTensor > threadHole)
 
         truePositive = 0
         falsePostive = 0
@@ -55,7 +55,7 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
         trueNegative = 0
         for evalIdx in range(reconstructOutput.shape[1]):
             curData = (compareTensor[:, evalIdx, :].bool())
-            curLabel = (labels[:, evalIdx, :].bool())
+            curLabel = (~labels[:, evalIdx, :].bool())
 
             truePositive += (curData * curLabel).sum().item()    
             trueNegative += ((~(curData.bool())) * (~(curLabel.bool()))).sum().item()
@@ -64,8 +64,11 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
             falseNegative += (temp == 1).sum().item()
             falsePostive += (temp == -1).sum().item()
 
-        precision = truePositive / (truePositive + falsePostive)
-        recall = truePositive / (truePositive + falseNegative)
+        precision = truePositive
+        recall = truePositive
+        if truePositive != 0:
+            precision = truePositive / (truePositive + falsePostive)
+            recall = truePositive / (truePositive + falseNegative)
         f1 = 2*(recall * precision) / (recall + precision)
         print('th\t', threadHole, '\teval\t', '\tprecision\t', format(precision, '.3f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.3f'))    
 
@@ -85,11 +88,11 @@ if __name__ == '__main__':
 
     # config = TimeGanConfig(modelFolderPath, isLoggerEnable)
     # config = RandomRAETaskConfig(modelFolderPath, isLoggerEnable)
-    # config = RAETaskConfig(modelFolderPath, isLoggerEnable)
+    config = RAETaskConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorTaskConfig(modelFolderPath)
     # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
-    config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
+    # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
     # config = OffsetGruAEConfig(modelFolderPath, isLoggerEnable, len(normalDataset[0][0]), len(normalDataset[0][0]), fileList)
     # config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
     # config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
@@ -113,7 +116,7 @@ if __name__ == '__main__':
     # start trainning
     # toTrainDataset, labelDataset, labelDatasetLengths = mlModel.getInputTensor(trainDataset, trainsetLengths)
     mlModel.train()
-    batchSize = 5000
+    batchSize = trainDataset.shape[0]
     currentIdx = 0
     datasetSize = trainDataset.shape[0]
     epoch = 0
