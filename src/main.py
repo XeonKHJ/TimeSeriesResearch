@@ -89,9 +89,9 @@ if __name__ == '__main__':
     # config = RAECorrectorTaskConfig(modelFolderPath)
     # config = OneDAutoencoderConfig(modelFolderPath, isLoggerEnable)
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
-    # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
+    config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
     # config = OffsetGruAEConfig(modelFolderPath, isLoggerEnable, len(normalDataset[0][0]), len(normalDataset[0][0]), fileList)
-    config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    # config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
     # config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
 
     # load config

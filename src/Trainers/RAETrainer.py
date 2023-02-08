@@ -59,17 +59,15 @@ class RAETrainer(ITrainer):
     def evalResult(self, validDataset, validsetLengths, storeName=None):
         self.aeModel.eval()
         for abnormalIdx in range(len(validsetLengths)):
-            abnormalInputSet, abnormalLabelSet, abnormalLengths = self.aeModel.getInputTensor(
-                validDataset, validsetLengths)
-            abnormalOutput = self.aeModel(abnormalInputSet, abnormalLengths)    
-            tl = abnormalOutput[abnormalIdx]
-            t = abnormalLabelSet[abnormalIdx]
+            validOutput = self.aeModel(validDataset, validsetLengths)    
+            tl = validOutput[abnormalIdx]
+            t = validDataset[abnormalIdx]
             ts = t - tl
             tlList = tl.reshape([-1]).tolist()
             tList = t.reshape([-1]).tolist()
             tsList = ts.reshape([-1]).tolist()
             # selftsList = self.ts[0].reshape([-1]).tolist()
-            maxDiff = (torch.abs(abnormalLabelSet - abnormalOutput)).max().item()
+            maxDiff = (torch.abs(validDataset - validOutput)).max().item()
             print("max diff\t", maxDiff)
             self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName+ '-raetrainer-' + storeName + "-" + str(abnormalIdx))
 
