@@ -3,6 +3,7 @@ import torch.nn
 import os.path as path
 import numpy
 from DatasetReader.HSSReader import HSSReader
+from DatasetReader.NABFoldersReader import NABFoldersReader
 from DatasetReader.SegmentNABDataReader import SegmentNABDataReader
 from DatasetReader.SegmentNABFolderDataReader import SegmentNABFolderDataReader
 from DatasetReader.SegmentNABFoldersDataReader import SegmentNABFoldersDataReader
@@ -26,17 +27,18 @@ from Trainers.CorrectorTrainer import CorrectorTrainer
 
 windowSize = 100
 # normalDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
-# normalDataReader = SegmentNABFolderDataReader("../../NAB/data/realAWSCloudwatch/")
+# normalDataReader = SegmentNABFolderDataReader("../../NAB/data/realAdExchange/", windowSize)
 # normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
-#normalDataReader = SegmentNABFolderDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
+# normalDataReader = SegmentNABFolderDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
 normalDataReader = SegmentNABFoldersDataReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"], windowSize )
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = HSSReader("../datasets/preprocessed/HSS")
 # abnormalDataReader = HSSReader("../datasets/preprocessed/HSS", isNormal=False)
-# abnormalDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
-abnormalDataReader = NABReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly")
+# abnormalDataReader = NABReader("../../NAB/data/realAdExchange/")
+# abnormalDataReader = NABReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly")
+abnormalDataReader = NABFoldersReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"])
 # abnormalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_jumpsup.csv")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
@@ -44,7 +46,7 @@ modelFolderPath = "SavedModels"
 
 def reconstruct(mlModel, validDataset, validsetLength):
     reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))
-    step = 100
+    step = 50
     for idx in range(0, validDataset.shape[1]-windowSize+1, step):
         curInput = validDataset[:,idx:idx+windowSize,:]
         lengths = torch.tensor(curInput.shape[1]).repeat(curInput.shape[0])
@@ -67,7 +69,7 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels, loss):
     # evalSet = torch.cat((abnormalDataset, noise), 2)
     reconstructOutput = reconstruct(mlModel, validDataset, validDatsetLengths)
 
-    for threadHole in [0.4, 0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001]:
+    for threadHole in [0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001]:
         compareTensor = torch.abs(reconstructOutput - validDataset)
         compareTensor = (compareTensor > threadHole)
 
@@ -75,13 +77,15 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels, loss):
         falsePostive = 0
         falseNegative = 0
         trueNegative = 0
-        windowSize= 100
-        for evalIdx in range(0, reconstructOutput.shape[1], 20):
-            curData = (compareTensor[:, evalIdx:evalIdx+100, :].bool()).sum(1) >= 1
-            curLabel = (~labels[:, evalIdx:evalIdx+100, :].bool()).sum(1) >= 1
+        evalWindowSize= 50
+        for evalIdx in range(0, reconstructOutput.shape[1], evalWindowSize):
+            curData = (compareTensor[:, evalIdx:evalIdx+evalWindowSize, :].bool()).sum(1) >= 1
+            curLabel = (~labels[:, evalIdx:evalIdx+evalWindowSize, :].bool()).sum(1) >= 1
 
-            truePositive += (curData.sum() * curLabel.sum()).bool().sum().item()    
-            trueNegative += ((~(curData.bool())).sum() * (~(curLabel.bool())).sum()).bool().sum().item()
+            if curLabel.sum() > 0:
+                if curData.sum() > 0:
+                    truePositive += curLabel.sum()
+            # trueNegative += ((~(curData.bool())).sum() * (~(curLabel.bool())).sum()).bool().sum().item()
 
             temp = curLabel.sum().bool().int() - curData.sum().bool().int()
             falseNegative += (temp == 1).sum().item()
@@ -118,8 +122,8 @@ if __name__ == '__main__':
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
     # config = OffsetGruAEConfig(modelFolderPath, isLoggerEnable, len(normalDataset[0][0]), len(normalDataset[0][0]), fileList)
-    config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
-    # config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    # config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
