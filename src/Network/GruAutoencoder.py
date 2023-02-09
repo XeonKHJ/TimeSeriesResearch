@@ -19,9 +19,9 @@ class GruAutoencoder(nn.Module):
         self.hidden_size = hidden_size
         self.output_size = output_size
 
-        self.gruEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
+        self.gruEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, dropout=0.2) # utilize the LSTM model in torch.nn 
         self.encodeFc = nn.Linear(hidden_size, hidden_size)
-        self.gruDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True) 
+        self.gruDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True, dropout = 0.2) 
         
         self.forwardCalculation = nn.Linear(hidden_size,output_size)
         # self.finalCalculation = nn.Sigmoid()

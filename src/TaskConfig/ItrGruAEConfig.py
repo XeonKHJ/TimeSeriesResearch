@@ -1,3 +1,4 @@
+from DataNormalizer.StandardScalerDataNormalizer import StandardScalerDataNormalizer
 from Network.IterGruAutoencoder import IterGruAutoencoder
 from Logger.PlotLogger import PlotLogger
 from TaskConfig.ITaskConfig import ITaskConfig
@@ -21,7 +22,7 @@ class ItrGruAEConfig(ITaskConfig):
         feature_size = self.inputFeatureSize
         output_size = self.outputFeatureSize
         logger = PlotLogger(isPlotEnable=self.isLogEnable)
-        mlModel = IterGruAutoencoder(feature_size,4,output_size,2)
+        mlModel = IterGruAutoencoder(feature_size,4,output_size,1)
         taskName = 'ItrGruAEConfig'
         try:
             mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))

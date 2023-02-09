@@ -53,11 +53,10 @@ class Trainer(ITrainer):
         torch.save(self.mlModel.state_dict(), path.join(self.modelFolderPath, filename))
 
     def reconstruct(self, mlModel, validDataset, validsetLength):
-        reconstructSeqs = []
-        for idx in range(0, validDataset.shape[1], 100):
+        reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))
+        for idx in range(0, validDataset.shape[1]-100+1, 50):
             curInput = validDataset[:,idx:idx+100,:]
             lengths = torch.tensor(curInput.shape[1]).repeat(curInput.shape[0])
             output = mlModel(validDataset[:,idx:idx+100,:], lengths)
-            reconstructSeqs.append(output)
-        reconstructed = torch.cat(reconstructSeqs, 1)
-        return reconstructed
+            reconstructSeqs[:,idx:idx+100,:] = output
+        return reconstructSeqs

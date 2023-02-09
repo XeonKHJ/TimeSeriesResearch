@@ -23,7 +23,7 @@ class GruOneDEncodedAutoencoder(nn.Module):
 
         self.encodedFeatureSize = 20
 
-        self.lstmEncoder = nn.GRU(feature_size, self.encodedFeatureSize, num_layers,batch_first =True) # utilize the LSTM model in torch.nn 
+        self.lstmEncoder = nn.GRU(feature_size, self.encodedFeatureSize, num_layers,batch_first =True, dropout=0.2) # utilize the LSTM model in torch.nn 
         self.lstmEncoderForward = nn.Linear(self.encodedFeatureSize, self.encodedFeatureSize)
         # self.relu = nn.ReLU()
         self.lstmDecoder = nn.GRU(self.encodedFeatureSize, hidden_size, num_layers, batch_first=True) 

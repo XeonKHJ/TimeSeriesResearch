@@ -55,7 +55,7 @@ class SegmentNABFolderDataReader(IDatasetReader):
     def segement(self, fulldata):
         segementedData = list()
         for data in fulldata:
-            totalSteps = len(data['set']) - self.windowSize + 1
+            totalSteps = ((len(data['set']))) - self.windowSize + 1
             for step in range(totalSteps):
                 curItem = {
                     'set': data['set'][step:step+self.windowSize],
