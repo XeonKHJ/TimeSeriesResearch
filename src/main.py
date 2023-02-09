@@ -5,6 +5,7 @@ import numpy
 from DatasetReader.HSSReader import HSSReader
 from DatasetReader.SegmentNABDataReader import SegmentNABDataReader
 from DatasetReader.SegmentNABFolderDataReader import SegmentNABFolderDataReader
+from DatasetReader.SegmentNABFoldersDataReader import SegmentNABFoldersDataReader
 from DatasetReader.SingleNABDataReader import SingleNABDataReader
 from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
 from TaskConfig.GruAEConfig import GruAEConfig
@@ -23,10 +24,13 @@ from TaskConfig.RandomRAETaskConfig import RandomRAETaskConfig
 from TaskConfig.TimeGanConfig import TimeGanConfig
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
+windowSize = 100
 # normalDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
 # normalDataReader = SegmentNABFolderDataReader("../../NAB/data/realAWSCloudwatch/")
 # normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
-normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+# normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
+#normalDataReader = SegmentNABFolderDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
+normalDataReader = SegmentNABFoldersDataReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"], windowSize )
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = HSSReader("../datasets/preprocessed/HSS")
@@ -37,15 +41,33 @@ abnormalDataReader = NABReader("../datasets/preprocessed//NAB/artificialWithAnom
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
-def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
+
+def reconstruct(mlModel, validDataset, validsetLength):
+    reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))
+    step = 20
+    for idx in range(0, validDataset.shape[1]-windowSize+1, step):
+        curInput = validDataset[:,idx:idx+windowSize,:]
+        lengths = torch.tensor(curInput.shape[1]).repeat(curInput.shape[0])
+        output = mlModel(validDataset[:,idx:idx+windowSize,:], lengths)
+        reconstructSeqs[:,idx:idx+windowSize,:] = output
+
+    # final
+    timeLength = validDataset.shape[1]
+    curInput = validDataset[:,timeLength-windowSize:timeLength,:]
+    lengths = torch.tensor(curInput.shape[1]).repeat(curInput.shape[0])
+    reconstructSeqs[:,timeLength-windowSize:timeLength,:] = mlModel(validDataset[:,idx:idx+windowSize,:], lengths)
+
+    return reconstructSeqs
+
+def evalutaion(mlModel, validDataset, validDatsetLengths, labels, loss):
     # 验证
     mlModel.eval()
     # noise = torch.tensor(numpy.random.normal(0, 1, (abnormalDataset.shape[0], abnormalDataset.shape[1], abnormalDataset.shape[2])), dtype=torch.float32, device=torch.device('cuda'))
     validDataset = validDataset.cuda()
     # evalSet = torch.cat((abnormalDataset, noise), 2)
-    reconstructOutput = mlModel(validDataset, abnormalDatasetLengths)
+    reconstructOutput = reconstruct(mlModel, validDataset, validDatsetLengths)
 
-    for threadHole in [0.01, 0.001]:
+    for threadHole in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001]:
         compareTensor = torch.abs(reconstructOutput - validDataset)
         compareTensor = (compareTensor > threadHole)
 
@@ -53,9 +75,10 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
         falsePostive = 0
         falseNegative = 0
         trueNegative = 0
-        for evalIdx in range(reconstructOutput.shape[1]):
-            curData = (compareTensor[:, evalIdx, :].bool())
-            curLabel = (~labels[:, evalIdx, :].bool())
+        windowSize= 100
+        for evalIdx in range(0, reconstructOutput.shape[1], 20):
+            curData = (compareTensor[:, evalIdx:evalIdx+100, :].bool()).sum(1) >= 1
+            curLabel = (~labels[:, evalIdx:evalIdx+100, :].bool()).sum(1) >= 1
 
             truePositive += (curData * curLabel).sum().item()    
             trueNegative += ((~(curData.bool())) * (~(curLabel.bool()))).sum().item()
@@ -66,11 +89,12 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels):
 
         precision = truePositive
         recall = truePositive
+        f1 = 0
         if truePositive != 0:
             precision = truePositive / (truePositive + falsePostive)
             recall = truePositive / (truePositive + falseNegative)
-        f1 = 2*(recall * precision) / (recall + precision)
-        print('th\t', threadHole, '\teval\t', '\tprecision\t', format(precision, '.3f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.3f'))    
+            f1 = 2*(recall * precision) / (recall + precision)
+        print('loss\t', format(loss.item(), ".7f"), '\tth\t', threadHole, '\teval\t', '\tprecision\t', format(precision, '.3f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.3f'))    
 
 if __name__ == '__main__':
     if torch.cuda.is_available():
@@ -132,9 +156,9 @@ if __name__ == '__main__':
         trainningLengths = trainsetLengths[startIdx:endIdx]
         labelSet = labels[startIdx:endIdx]
         loss = trainer.train(trainSet, trainningLengths, labelSet)
-        if epoch % 300 == 0:
+        if epoch % 100 == 0:
             # trainer.evalResult(normalDataset, normalDatasetLengths, 'normalset')
             trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalset')
             trainer.save()
-            evalutaion(mlModel, abnormalDataset, abnormalDatasetLengths, abnormallabels)
+            evalutaion(mlModel, abnormalDataset, abnormalDatasetLengths, abnormallabels, loss)
         epoch += 1
