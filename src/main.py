@@ -2,12 +2,14 @@ import torch
 import torch.nn
 import os.path as path
 import numpy
+from DataSegmentor.SlidingWindowStepDataSegement import SlidingWindowStepDataSegement
 from DatasetReader.HSSReader import HSSReader
 from DatasetReader.NABFoldersReader import NABFoldersReader
 from DatasetReader.SegmentNABDataReader import SegmentNABDataReader
 from DatasetReader.SegmentNABFolderDataReader import SegmentNABFolderDataReader
 from DatasetReader.SegmentNABFoldersDataReader import SegmentNABFoldersDataReader
 from DatasetReader.SingleNABDataReader import SingleNABDataReader
+from TaskConfig.AheadTaskConfig import AheadTaskConfig
 from TaskConfig.CorrectTaskConfig import CorrectTaskConfig
 from TaskConfig.GruAEConfig import GruAEConfig
 from TaskConfig.ItrGruAEConfig import ItrGruAEConfig
@@ -25,24 +27,30 @@ from TaskConfig.RandomRAETaskConfig import RandomRAETaskConfig
 from TaskConfig.TimeGanConfig import TimeGanConfig
 from Trainers.CorrectorTrainer import CorrectorTrainer
 
-windowSize = 50
+windowSize = 100
+# normalDataReader = NABReader("../../NAB/data/artificialNoAnomaly")
+normalDataReader = NABFoldersReader(["../../NAB/data/realAWSCloudwatch/"])
 # normalDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
 # normalDataReader = SegmentNABFolderDataReader("../../NAB/data/realAdExchange/", windowSize)
 # normalDataReader = SegmentNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = SegmentNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SegmentNABFolderDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly")
-normalDataReader = SegmentNABFoldersDataReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"], windowSize )
+# normalDataReader = SegmentNABFoldersDataReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"], windowSize )
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialNoAnomaly/artificialNoAnomaly/art_daily_small_noise.csv")
 # normalDataReader = SingleNABDataReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_flatmiddle.csv")
 # normalDataReader = HSSReader("../datasets/preprocessed/HSS")
 # abnormalDataReader = HSSReader("../datasets/preprocessed/HSS", isNormal=False)
-# abnormalDataReader = NABReader("../../NAB/data/realAdExchange/")
+reconstructDataReader = NABReader("../../NAB/data/realAWSCloudwatch/")
 # abnormalDataReader = NABReader("../datasets/preprocessed//NAB/artificialWithAnomaly/artificialWithAnomaly")
-abnormalDataReader = NABFoldersReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"])
+# abnormalDataReader = NABFoldersReader(["../../NAB/data/artificialNoAnomaly","../../NAB/data/artificialWithAnomaly"])
 # abnormalDataReader = SingleNABDataReader("../datasets/preprocessed/NAB/artificialWithAnomaly/artificialWithAnomaly/art_daily_jumpsup.csv")
 # skabDataReader = SKABDatasetReader("C:\\Users\\redal\\source\\repos\\SKAB\\data\\valve1")
 modelFolderPath = "SavedModels"
 
+def shuffle(dataset):
+    shuffleIdx = torch.randperm(dataset.shape[0])
+    dataset = dataset[shuffleIdx, :, :]
+    return dataset
 
 def reconstruct(mlModel, validDataset, validsetLength):
     reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))
@@ -69,7 +77,7 @@ def evalutaion(mlModel, validDataset, validDatsetLengths, labels, loss):
     # evalSet = torch.cat((abnormalDataset, noise), 2)
     reconstructOutput = reconstruct(mlModel, validDataset, validDatsetLengths)
 
-    for threadHole in [0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001]:
+    for threadHole in [0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
         compareTensor = torch.abs(reconstructOutput - validDataset)
         compareTensor = (compareTensor > threadHole)
 
@@ -111,8 +119,12 @@ if __name__ == '__main__':
     isLoggerEnable = not (args.disablePlot)
 
     # load data
-    normalDataset, normalDatasetLengths, normalLabels, labels = normalDataReader.read()
-    abnormalDataset, abnormalDatasetLengths, abnormalLabels, abnormallabels, fileList = abnormalDataReader.read()
+    normalDataset, normalDatasetLengths, normalLabels, labels, _ = normalDataReader.read()
+    abnormalDataset, abnormalDatasetLengths, abnormalLabels, abnormallabels, fileList = reconstructDataReader.read()
+
+    segementor = SlidingWindowStepDataSegement(100, 20)
+    segementedDataset = segementor.segement(normalDataset, normalDatasetLengths)
+    shuffledDataset = shuffle(segementedDataset)
 
     # config = TimeGanConfig(modelFolderPath, isLoggerEnable)
     # config = RandomRAETaskConfig(modelFolderPath, isLoggerEnable)
@@ -122,14 +134,15 @@ if __name__ == '__main__':
     # config = StaticAeConfig(modelFolderPath, isLoggerEnable)
     # config = RAECorrectorWithTrendTaskConfig(modelFolderPath, isLoggerEnable)
     # config = OffsetGruAEConfig(modelFolderPath, isLoggerEnable, len(normalDataset[0][0]), len(normalDataset[0][0]), fileList)
-    # config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
-    config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    config = GruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    # config = ItrGruAEConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
+    # config = AheadTaskConfig(modelFolderPath, isLoggerEnable, fileList=fileList)
 
     # load config
     mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName = config.getConfig()
 
-    # dataNormalizer.addDatasetToRef(normalDataset)
-    dataNormalizer.addDatasetToRef(abnormalDataset)
+    dataNormalizer.addDatasetToRef(normalDataset)
+    # dataNormalizer.addDatasetToRef(abnormalDataset)
     normalDataset = dataNormalizer.normalizeDataset(normalDataset)
     abnormalDataset = dataNormalizer.normalizeDataset(abnormalDataset)
     trainDataset, trainsetLengths = datasetSeperator.getTrainningSet(normalDataset, normalDatasetLengths)
@@ -160,7 +173,7 @@ if __name__ == '__main__':
         trainningLengths = trainsetLengths[startIdx:endIdx]
         labelSet = labels[startIdx:endIdx]
         loss = trainer.train(trainSet, trainningLengths, labelSet)
-        if epoch % 100 == 0:
+        if epoch % 1000 == 0:
             # trainer.evalResult(normalDataset, normalDatasetLengths, 'normalset')
             trainer.evalResult(abnormalDataset, abnormalDatasetLengths, 'abnormalset')
             trainer.save()

@@ -25,7 +25,7 @@ class IterGruAutoencoder(nn.Module):
         self.gruDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True) 
         
         self.forwardCalculation = nn.Linear(hidden_size,output_size)
-        # self.finalCalculation = nn.Sigmoid()
+        self.finalCalculation = nn.Sigmoid()
         self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
@@ -45,6 +45,7 @@ class IterGruAutoencoder(nn.Module):
             decoderOutputUnit, encodedH = self.gruDecoder(decoderOutput[:, idx-1, :].reshape(paddedX.shape[0], 1, -1), encodedH)
             decoderOutput = torch.cat((decoderOutput, decoderOutputUnit), 1)
         x = self.forwardCalculation(decoderOutput)
+        x = self.finalCalculation(x)
         return x
 
     def getInputTensor(self, dataset, datasetLengths):

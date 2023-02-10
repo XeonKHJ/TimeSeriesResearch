@@ -19,29 +19,33 @@ class AheadTrainer(ITrainer):
         self.mlModel.train()
         startTime = time.perf_counter()
         windowSize = self.windowSize
-        
+        step = 4
         if self.splitData == None:
             self.splitedData = list()
             # split
             for idx in range(trainSet.shape[0]):
                 splitdata = list()
-                for timeIdx in range(trainSet.shape[1] - self.windowSize + 1):
-                    splitdata.append(trainSet[idx, timeIdx:timeIdx+self.windowSize, :])
+                for timeIdx in range(0, trainSet.shape[1] - self.windowSize + 1, step):
+                    if timeIdx+self.windowSize < trainSet.shape[1]:
+                        splitdata.append(trainSet[idx, timeIdx:timeIdx+self.windowSize, :])
+                    else:
+                        pass
                 self.splitedData.append(torch.cat(splitdata).reshape((-1, self.windowSize, trainSet.shape[2])))
-            # self.splitedData = torch.cat(self.splitedData)
+            self.splitedData = torch.cat(self.splitedData)
 
-        for setIdx in range(trainSet.shape[0]):
-            lengths = torch.tensor(windowSize).repeat(self.splitedData[setIdx].shape[0]).tolist()
-            output = self.mlModel(self.splitedData[setIdx], lengths)
+            lengths = torch.tensor(windowSize).repeat(self.splitedData.shape[0]).tolist()
+            output = self.mlModel(self.splitedData, lengths)
+            output = output.reshape(trainSet.shape[0], -1, self.windowSize, trainSet.shape[2])
             outputedTime = time.perf_counter()
-            output = output[0:output.shape[0]-self.windowSize]
-            output = torch.cat((self.splitedData[setIdx][0:self.windowSize], output))
-            loss = self.lossFunc(output, self.splitedData[setIdx])
+            output = output[:, 0:output.shape[1]-(int(self.windowSize / step))]
+            reshapedSplitedData = self.splitedData.reshape(trainSet.shape[0], -1, self.windowSize, trainSet.shape[2])
+            output = torch.cat((reshapedSplitedData[:,0:int(self.windowSize / step)], output), 1)
+            loss = self.lossFunc(output, reshapedSplitedData)
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
             backwardTime = time.perf_counter()
-            print("\tloss\t", loss.item(), "\tforward\t", outputedTime-startTime, "\tlosstime\t", backwardTime-outputedTime)
+            # print("\tloss\t", loss.item(), "\tforward\t", outputedTime-startTime, "\tlosstime\t", backwardTime-outputedTime)
 
         return loss
 

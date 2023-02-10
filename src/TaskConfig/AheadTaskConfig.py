@@ -1,3 +1,4 @@
+from Network.BiGruAutoencoder import BiGruAutoencoder
 from Network.GruAutoencoder import GruAutoencoder
 from Logger.PlotLogger import PlotLogger
 from TaskConfig.ITaskConfig import ITaskConfig
@@ -20,7 +21,7 @@ class AheadTaskConfig(ITaskConfig):
         feature_size = self.inputFeatureSize
         output_size = self.outputFeatureSize
         logger = PlotLogger(isPlotEnable=self.isLogEnable)
-        mlModel = GruAutoencoder(feature_size,4,output_size,2, 0)
+        mlModel = BiGruAutoencoder(feature_size,10,output_size,4)
         taskName = 'AheadTaskConfig'
         try:
             mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))

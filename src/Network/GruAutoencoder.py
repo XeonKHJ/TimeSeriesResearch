@@ -13,15 +13,15 @@ class GruAutoencoder(nn.Module):
         - output_size: number of output
         - num_layers: layers of LSTM to stack
     """
-    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1):
+    def __init__(self, feature_size, hidden_size=1, output_size=1, num_layers=1, dropout=0.2):
         super().__init__()
         self.feature_size = feature_size
         self.hidden_size = hidden_size
         self.output_size = output_size
 
-        self.gruEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, dropout=0.2) # utilize the LSTM model in torch.nn 
+        self.gruEncoder = nn.GRU(feature_size, hidden_size, num_layers,batch_first =True, dropout=dropout) # utilize the LSTM model in torch.nn 
         self.encodeFc = nn.Linear(hidden_size, hidden_size)
-        self.gruDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True, dropout = 0.2) 
+        self.gruDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True, dropout=dropout) 
         
         self.forwardCalculation = nn.Linear(hidden_size,output_size)
         # self.finalCalculation = nn.Sigmoid()

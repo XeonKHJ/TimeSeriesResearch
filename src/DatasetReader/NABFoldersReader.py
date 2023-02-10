@@ -9,11 +9,10 @@ import os.path as path
 from DatasetReader.DatasetReader import IDatasetReader
 
 class NABFoldersReader(IDatasetReader):
-    def __init__(self, folderPath, partial = 1) -> None:
+    def __init__(self, folderPath) -> None:
         super().__init__()
         self.folderPath = folderPath
         self.labelPath = '../../NAB/labels/combined_labels.json'
-        self.partial = partial
 
     def read(self):
         label = self.readLabels()
@@ -33,12 +32,6 @@ class NABFoldersReader(IDatasetReader):
             data = pandas.read_csv(filePath)
             datasetItem = data.value.to_list()
             timestamps = data['timestamp'].tolist()
-            if self.partial <= 1:
-                datasetItem = datasetItem[0:int(len(datasetItem) * self.partial)]
-                timestamps = timestamps[0:int(len(timestamps) * self.partial)]
-            else:
-                datasetItem = datasetItem[0:self.partial]
-                timestamps = timestamps[0:self.partial]
             for idx in range(len(timestamps)):
                 datetimes = re.split('[- :]',timestamps[idx])
                 datetimes = datetime.datetime(int(datetimes[0]),int(datetimes[1]),int(datetimes[2]),int(datetimes[3]),int(datetimes[4]),int(datetimes[5]))
@@ -48,17 +41,18 @@ class NABFoldersReader(IDatasetReader):
             rawData[file] = data
         fulldata.sort(key=(lambda elem:len(elem['set'])), reverse=True)
         dataTensor = torch.zeros([fulldata.__len__(), maxDataLength, featureSize])
-        labelTensor = torch.ones([fulldata.__len__(), maxDataLength, featureSize])
+        labelTensor = torch.zeros([fulldata.__len__(), maxDataLength, featureSize])
         for i in range(fulldata.__len__()):
             dataTensor[i][0:fulldata[i]['set'].__len__()] = torch.tensor(fulldata[i]['set'][:]).reshape([-1,1])
             for outlierTimeStamp in label[fulldata[i]['filename']]:
                 try:
                     outlierIdx = fulldata[i]['timestamps'].index(outlierTimeStamp)
-                    labelTensor[i][outlierIdx] = 0
+                    labelTensor[i][outlierIdx] = 1
                 except:
                     pass
             dataTimestampLengths.append(fulldata[i]['set'].__len__())
 
+        dataTensor = torch.cat((dataTensor, labelTensor), 2)
         if torch.cuda.is_available():
             return dataTensor.cuda(), dataTimestampLengths, dataTensor.cuda(), labelTensor.cuda(), fileList
         else:

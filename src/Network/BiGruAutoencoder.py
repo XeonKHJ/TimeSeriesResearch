@@ -24,7 +24,7 @@ class BiGruAutoencoder(nn.Module):
         self.lstmDecoder = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True, bidirectional=True) 
         
         self.forwardCalculation = nn.Linear(2*hidden_size,output_size)
-        self.finalCalculation = nn.Sigmoid()
+        # self.finalCalculation = nn.Sigmoid()
         self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
@@ -38,7 +38,7 @@ class BiGruAutoencoder(nn.Module):
         x, lengths = torchrnn.pad_packed_sequence(x, batch_first=True)
     
         x = self.forwardCalculation(x)
-        x = self.finalCalculation(x)
+        # x = self.finalCalculation(x)
 
         return x
 
