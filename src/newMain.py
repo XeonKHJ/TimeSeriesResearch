@@ -64,15 +64,16 @@ if __name__ == '__main__':
             loss = trainer.train(trainData, lengths, labels)
         if epoch % 100 == 0:
             trainer.save()
-            for testData, testLabels in testDataLoader:
-                lengths = testLabels[:, testLabels.shape[1]-1]
-                labels = testLabels[:, 0:testLabels.shape[1]-1]            
-                trainer.evalResult(testData, lengths, labels)
+            # for testData, testLabels in testDataLoader:
+            #     lengths = testLabels[:, testLabels.shape[1]-1]
+            #     labels = testLabels[:, 0:testLabels.shape[1]-1]            
+            #     trainer.evalResult(testData, lengths, labels)
             for validData, validLabels in validDataLaoder:
                 lengths = validLabels[:, validLabels.shape[1]-1]
                 labels = validLabels[:, 0:validLabels.shape[1]-1] 
                 newFileList = list() 
                 for fileName in fileList:
                      newFileList.append(path.splitext(path.basename(fileName))[0])
-                trainer.recordResult(validData, lengths, newFileList)                  
+                trainer.recordResult(validData, lengths, newFileList)
+                trainer.evalResult(validData, lengths, labels)                  
         epoch += 1
