@@ -9,10 +9,11 @@ import os.path as path
 from DatasetReader.DatasetReader import IDatasetReader
 
 class NABFoldersReader(IDatasetReader):
-    def __init__(self, folderPath) -> None:
+    def __init__(self, folderPath, partial = 1) -> None:
         super().__init__()
         self.folderPath = folderPath
         self.labelPath = '../../NAB/labels/combined_labels.json'
+        self.partial = partial
 
     def read(self):
         label = self.readLabels()
@@ -32,6 +33,12 @@ class NABFoldersReader(IDatasetReader):
             data = pandas.read_csv(filePath)
             datasetItem = data.value.to_list()
             timestamps = data['timestamp'].tolist()
+            if self.partial <= 1:
+                datasetItem = datasetItem[0:int(len(datasetItem) * self.partial)]
+                timestamps = timestamps[0:int(len(timestamps) * self.partial)]
+            else:
+                datasetItem = datasetItem[0:self.partial]
+                timestamps = timestamps[0:self.partial]
             for idx in range(len(timestamps)):
                 datetimes = re.split('[- :]',timestamps[idx])
                 datetimes = datetime.datetime(int(datetimes[0]),int(datetimes[1]),int(datetimes[2]),int(datetimes[3]),int(datetimes[4]),int(datetimes[5]))
@@ -45,8 +52,11 @@ class NABFoldersReader(IDatasetReader):
         for i in range(fulldata.__len__()):
             dataTensor[i][0:fulldata[i]['set'].__len__()] = torch.tensor(fulldata[i]['set'][:]).reshape([-1,1])
             for outlierTimeStamp in label[fulldata[i]['filename']]:
-                outlierIdx = fulldata[i]['timestamps'].index(outlierTimeStamp)
-                labelTensor[i][outlierIdx] = 0
+                try:
+                    outlierIdx = fulldata[i]['timestamps'].index(outlierTimeStamp)
+                    labelTensor[i][outlierIdx] = 0
+                except:
+                    pass
             dataTimestampLengths.append(fulldata[i]['set'].__len__())
 
         if torch.cuda.is_available():
