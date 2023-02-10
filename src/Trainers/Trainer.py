@@ -2,16 +2,18 @@ from Trainers.ITrainer import ITrainer
 import time
 import torch
 import os.path as path
+from globalConfig import globalConfig
 
 class Trainer(ITrainer):
-    def __init__(self, model, taskName, logger, learningRate=1e-3, fileList=[]):
+    def __init__(self, model, logger, learningRate=1e-3, exprimentName=None, showInfo=True):
         self.mlModel = model
+        if torch.cuda.is_available():
+            self.mlModel.cuda()
         self.lossFunc = torch.nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.mlModel.parameters(), lr=learningRate)
-        self.taskName = taskName
         self.logger = logger
-        self.fileList = fileList
-        self.modelFolderPath = "SavedModels"
+        self.experimentName = exprimentName
+        self.showInfo = showInfo
 
     def train(self, trainSet, trainSetLength, labelSet):
         self.mlModel.train()
@@ -23,7 +25,8 @@ class Trainer(ITrainer):
         self.optimizer.step()
         self.optimizer.zero_grad()
         backwardTime = time.perf_counter()
-        # print("\tloss\t", loss.item(), "\tforward\t", outputedTime-startTime, "\tlosstime\t", backwardTime-outputedTime)
+        if self.showInfo:
+            print("\tloss\t", format(loss.item(), ".9f"), "\tforward\t", format(outputedTime-startTime, ".7f"), "\tlosstime\t", format(backwardTime-outputedTime, ".7f"))
         return loss
 
     def evalResult(self, validDataset, validsetLengths, labels):
@@ -59,14 +62,11 @@ class Trainer(ITrainer):
                 f1 = 2*(recall * precision) / (recall + precision)
             print('\tth\t', threadhold, '\teval\t', '\tprecision\t', format(precision, '.3f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.3f'))    
 
-    def recordResult(self, dataset, lengths, storeName=None):
+    def recordResult(self, dataset, lengths, storeNames):
         self.mlModel.eval()
+        lengths = lengths.int()
         for validIdx in range(len(lengths)):
             validOutput = self.reconstruct(self.mlModel, dataset, lengths)
-            if validIdx<len(self.fileList):
-                ogFileName = "-"+ path.splitext(path.basename(self.fileList[validIdx]))[0]
-            else:
-                ogFileName = ""
             for featIdx in range(dataset.shape[2]):
                 tl = validOutput[validIdx,:,featIdx]
                 t = dataset[validIdx,:,featIdx]
@@ -74,16 +74,15 @@ class Trainer(ITrainer):
                 tlList = tl.reshape([-1])[0:lengths[validIdx]].tolist()
                 tList = t.reshape([-1])[0:lengths[validIdx]].tolist()
                 tsList = ts.reshape([-1])[0:lengths[validIdx]].abs().tolist()
-                # maxDiff = (torch.abs(abnormalLabelSet - validOutput)).max().item()
-                # print("max diff\t", maxDiff)
-                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName + '-' + storeName + "-idx" + str(validIdx) + '-feat' + str(featIdx))
+                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.experimentName + '-' + storeNames[validIdx] + '-feat' + str(featIdx))
 
-    def save(self, filename=None):
-        if filename == None:
-            filename = self.taskName + ".pt"
-        else:
-            filename = self.taskName + '-' + filename + ".pt"
-        torch.save(self.mlModel.state_dict(), path.join(self.modelFolderPath, filename))
+    def save(self):
+        filename = self.experimentName + ".pt"
+        torch.save(self.mlModel.state_dict(), path.join(globalConfig.getModelPath(), filename))
+
+    def load(self):
+        filename = self.experimentName + ".pt"
+        self.mlModel.load_state_dict(torch.load(path.join(globalConfig.getModelPath(), filename)))
 
     def reconstruct(self, mlModel, validDataset, validsetLength):
         reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))

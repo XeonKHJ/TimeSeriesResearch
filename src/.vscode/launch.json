@@ -14,6 +14,15 @@
             "justMyCode": true
         },
         {
+            "name": "newMain Train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/newMain.py",
+            "console": "integratedTerminal",
+            "args": ["--disablePlot"],
+            "justMyCode": true
+        },
+        {
             "name": "Train Enable Log",
             "type": "python",
             "request": "launch",
