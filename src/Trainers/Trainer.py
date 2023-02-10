@@ -1,3 +1,4 @@
+from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 from Trainers.ITrainer import ITrainer
 import time
 import torch
@@ -30,28 +31,63 @@ class Trainer(ITrainer):
         return loss
 
     def evalResult(self, validDataset, validsetLengths, labels):
-        self.mlModel.eval()
-        validOutput = self.mlModel(validDataset, validsetLengths)
-        diff = torch.abs(validOutput - validDataset)
-        for threadhold in [0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
-            compareTensor = (diff > threadhold).reshape(diff.shape[0], -1)
+        evalWindowSize= 100
+        dataProcessor = SlidingWindowStepDataProcessor(evalWindowSize, 1)
+        
+        toEvalSplitedDataTensorList = list()
+        for idx in range(len(validsetLengths)):
+            toEvalDataSplitedTensor, toEvalDataLength = dataProcessor.process(validDataset[idx:idx+1], [validsetLengths[idx]])
+            toEvalOutputTensor = self.mlModel(toEvalDataSplitedTensor, toEvalDataLength)
+            diff = torch.abs(toEvalOutputTensor - toEvalDataSplitedTensor)
+            toEvalSplitedDataTensorList.append({"data":toEvalDataSplitedTensor, "length":toEvalDataLength, "output": toEvalOutputTensor})
 
+        for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
             truePositive = 0
             falsePostive = 0
             falseNegative = 0
-            evalWindowSize= 50
-            for evalIdx in range(0, validOutput.shape[0]):
-                curData = (compareTensor[evalIdx].bool()).sum(0) >= 1
-                curLabel = (labels[evalIdx].bool()).sum(0) >= 1
+            step = 20
+            for evalIdx in range(0, len(validsetLengths)):
+                evalOutput = toEvalSplitedDataTensorList[evalIdx]["output"]
+                detectResult = evalOutput > threadhold
+                for labelIdx in range(0, validsetLengths[evalIdx].int().item(), evalWindowSize):
+                    realPosCount = 0
+                    predPosCount = 0
 
-                if curLabel.sum() > 0:
-                    if curData.sum() > 0:
-                        truePositive += curLabel.sum()
-                # trueNegative += ((~(curData.bool())).sum() * (~(curLabel.bool())).sum()).bool().sum().item()
+                    labelSegement = labels[evalIdx, labelIdx:labelIdx+evalWindowSize]
+                    realPosCount = torch.sum(labelSegement)
 
-                temp = curLabel.sum().bool().int() - curData.sum().bool().int()
-                falseNegative += (temp == 1).sum().item()
-                falsePostive += (temp == -1).sum().item()
+                    knownDataLabel = labels[:, evalIdx:evalIdx + evalWindowSize]
+                    evalBeginIdx = evalIdx + step - evalWindowSize
+                    evalEndIdx = evalIdx + evalWindowSize - step
+
+                    for rangeIdx in range(evalBeginIdx, evalEndIdx, step):
+                        if rangeIdx >= 0 and rangeIdx < evalEndIdx:
+                            diff = detectResult[rangeIdx]
+                            predPosCount += torch.sum(diff).int().item()
+
+                    # If a known anomalous window overlaps any predicted windows, a TP is recorded.
+                    if realPosCount != 0 and predPosCount != 0:
+                        truePositive += 1
+
+                    # If a known anomalous window does not overlap any predicted windows, a FN is recorded.
+                    elif realPosCount != 0 and predPosCount == 0:
+                        falseNegative += 1
+
+                for predIdx in range(0, evalOutput.shape[1], evalWindowSize):
+                    realPosCount = 0
+                    predPosCount = 0
+                    diff = detectResult[rangeIdx]
+                    predPosCount = torch.sum(diff).int().item()
+                    evalBeginIdx = evalIdx + step - evalWindowSize
+                    evalEndIdx = evalIdx + evalWindowSize - step
+
+                    for rangeIdx in range(evalBeginIdx, evalEndIdx, step):
+                        if rangeIdx >= 0 and rangeIdx < evalEndIdx:
+                            realPosCount += torch.sum(labels[evalIdx, rangeIdx:rangeIdx+evalWindowSize]).int().item()
+                    
+                    # If a predicted window does not overlap any labeled anomalous region, a FP is recorded.
+                    if predPosCount != 0 and realPosCount == 0:
+                        falsePostive += 1
 
             precision = truePositive
             recall = truePositive
