@@ -9,15 +9,21 @@ import os.path as path
 from DatasetReader.DatasetReader import IDatasetReader
 
 class NABFoldersReader(IDatasetReader):
-    def __init__(self, folderPath) -> None:
+    def __init__(self, repoPath, dataType) -> None:
         super().__init__()
-        self.folderPath = folderPath
-        self.labelPath = '../../NAB/labels/combined_labels.json'
+        self.repoPath = repoPath
+        self.dataFolders = list()
+        self.labelPath = os.path.join(repoPath, 'labels', 'combined_labels.json')
+        if dataType == 'artificial':
+            self.dataFolders.append(os.path.join(repoPath, 'data', 'artificialNoAnomaly'))
+            self.dataFolders.append(os.path.join(repoPath, 'data', 'artificialWithAnomaly'))
+        else:
+            self.dataFolders.append(os.path.join(repoPath, 'data', dataType))
 
     def read(self):
         label = self.readLabels()
         fileList = list()
-        for folder in self.folderPath:
+        for folder in self.dataFolders:
             curFileList = os.listdir(folder)
             for file in curFileList:
                 fileList.append(os.path.join(folder, file))
@@ -51,12 +57,12 @@ class NABFoldersReader(IDatasetReader):
                 except:
                     pass
             dataTimestampLengths.append(fulldata[i]['set'].__len__())
-
-        dataTensor = torch.cat((dataTensor, labelTensor), 2)
+        dataTimestampLengths = torch.tensor(dataTimestampLengths)
+        # dataTensor = torch.cat((dataTensor, labelTensor), 2)
         if torch.cuda.is_available():
-            return dataTensor.cuda(), dataTimestampLengths, dataTensor.cuda(), labelTensor.cuda(), fileList
+            return dataTensor.cuda(), dataTimestampLengths.cuda(), labelTensor.cuda(), fileList
         else:
-            return dataTensor, dataTimestampLengths, dataTensor, labelTensor, fileList
+            return dataTensor, dataTimestampLengths, labelTensor, fileList
     
     def readLabels(self):
         labels = json.load(open(self.labelPath))
