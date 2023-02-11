@@ -1,29 +1,32 @@
 from DataNormalizer.DataNormalizer import DataNormalizer
+from DataProcessor.PartitionDataProcessor import PartitionDataProcessor
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
 from DatasetReader.NABFoldersReader import NABFoldersReader
-from TaskConfig.GruAEConfig import GruAEConfig
+from TaskConfig.OneDAutoencoderConfig import OneDAutoencoderConfig
+from TaskConfig.RAETaskConfig import RAETaskConfig
 
 from globalConfig import globalConfig
 
 from DataProcessor.ShuffleDataProcessor import ShuffleDataProcessor
 from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 
-class GruAENABArtiExperiment(object):
+# RAE on NAB artifical dataset.
+class RAENABArtiExperiment(object):
     def __init__(self, logger):
         self.logger = logger
 
     def getName(self):
-        return "GruAENABArti"
+        return "RAENABArti"
 
     def getExperimentConfig(self):
         dataReader = NABFoldersReader("../../NAB/", "artificial")
-        displayDataReader = NABFoldersReader("../../NAB/", "artificial")
-        config = GruAEConfig(globalConfig.getModelPath(), self.logger, self.getName(), showTrainingInfo=False)
+        validDataReader = NABFoldersReader("../../NAB/", "artificial")
+        config = RAETaskConfig(self.logger, self.getName(), showTrainningInfo=True)
         trainer = config.getConfig()
         processers = [
-            SlidingWindowStepDataProcessor(windowSize=100, step=20),
+            PartitionDataProcessor(0.5),
             ShuffleDataProcessor()
         ]
         datasetSeperator = NoSepDataSeperator()        
         dataNormalizer = DataNormalizer()
-        return trainer, dataReader, processers, datasetSeperator, dataNormalizer
+        return trainer, dataReader, validDataReader, processers, datasetSeperator, dataNormalizer

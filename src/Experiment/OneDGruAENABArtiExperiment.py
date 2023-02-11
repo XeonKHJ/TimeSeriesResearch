@@ -26,4 +26,4 @@ class OneDGruAENABArtiExperiment(object):
         ]
         datasetSeperator = NoSepDataSeperator()        
         dataNormalizer = DataNormalizer()
-        return trainer, dataReader, processers, datasetSeperator, dataNormalizer
+        return trainer, dataReader, dataReader, processers, datasetSeperator, dataNormalizer

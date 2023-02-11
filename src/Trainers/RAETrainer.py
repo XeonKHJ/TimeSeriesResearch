@@ -3,19 +3,20 @@ import torch
 import time
 import os.path as path
 
+from globalConfig import globalConfig
+
 class RAETrainer(ITrainer):
-    def __init__(self, mlModel, logger, taskName, tsLambda=0.1):
+    def __init__(self, mlModel, logger, modelName, tsLambda=0.1):
         self.aeModel = mlModel
         self.lossFunc = torch.nn.MSELoss()
         self.ts = torch.zeros([0])
         self.tsLambda = tsLambda
         self.optimizer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
         self.step2Optimizer = None
-        self.raeTsPath = "SavedModels/raels.pt"
-        self.modelFolderPath = "SavedModels"
+        # self.raeTsPath = "SavedModels/raels.pt"
         self.epoch = 0
         self.logger = logger
-        self.taskName = taskName
+        self.modelName = modelName
 
     def train(self, trainSet, trainSetLength, labelSet):
         self.aeModel.train()
@@ -56,21 +57,88 @@ class RAETrainer(ITrainer):
         print("loss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item() / self.tsLambda, ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
         return loss
 
-    def evalResult(self, validDataset, validsetLengths, storeName=None):
+    def evalResult(self, validDataset, validsetLengths, labels):
         self.aeModel.eval()
-        for abnormalIdx in range(len(validsetLengths)):
-            validOutput = self.aeModel(validDataset, validsetLengths)    
-            tl = validOutput[abnormalIdx]
-            t = validDataset[abnormalIdx]
-            ts = t - tl
-            tlList = tl.reshape([-1]).tolist()
-            tList = t.reshape([-1]).tolist()
-            tsList = ts.reshape([-1]).tolist()
-            # selftsList = self.ts[0].reshape([-1]).tolist()
-            maxDiff = (torch.abs(validDataset - validOutput)).max().item()
-            print("max diff\t", maxDiff)
-            self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.taskName+ '-raetrainer-' + storeName + "-" + str(abnormalIdx))
+        reconstructData = self.aeModel(validDataset, validsetLengths)
+        error = torch.abs(reconstructData-validDataset)
+        evalWindowSize = 100
+        for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
+            truePositive = 0
+            falsePostive = 0
+            falseNegative = 0
+            step = 20
+            for evalIdx in range(0, len(validsetLengths)):
+                evalOutput = error[evalIdx, 0:validsetLengths[evalIdx].int().item()]
+                detectResult = evalOutput > threadhold
+                for labelIdx in range(0, validsetLengths[evalIdx].int().item(), evalWindowSize):
+                    realPosCount = 0
+                    predPosCount = 0
 
-    def save(self, filename=None):
-        torch.save(self.ts, self.raeTsPath)
-        torch.save(self.aeModel.state_dict(), path.join(self.modelFolderPath, self.taskName + ".pt"))
+                    labelSegement = labels[evalIdx, labelIdx:labelIdx+evalWindowSize]
+                    realPosCount = torch.sum(labelSegement)
+
+                    knownDataLabel = labels[:, evalIdx:evalIdx + evalWindowSize]
+                    evalBeginIdx = evalIdx + step - evalWindowSize
+                    evalEndIdx = evalIdx + evalWindowSize - step
+
+                    for rangeIdx in range(evalBeginIdx, evalEndIdx, step):
+                        if rangeIdx >= 0 and rangeIdx < evalEndIdx:
+                            diff = detectResult[rangeIdx:rangeIdx+evalWindowSize]
+                            predPosCount += torch.sum(diff).int().item()
+
+                    # If a known anomalous window overlaps any predicted windows, a TP is recorded.
+                    if realPosCount != 0 and predPosCount != 0:
+                        truePositive += 1
+
+                    # If a known anomalous window does not overlap any predicted windows, a FN is recorded.
+                    elif realPosCount != 0 and predPosCount == 0:
+                        falseNegative += 1
+
+                for predIdx in range(0, evalOutput.shape[1], evalWindowSize):
+                    realPosCount = 0
+                    predPosCount = 0
+                    diff = detectResult[rangeIdx:rangeIdx+evalWindowSize]
+                    predPosCount = torch.sum(diff).int().item()
+                    evalBeginIdx = evalIdx + step - evalWindowSize
+                    evalEndIdx = evalIdx + evalWindowSize - step
+
+                    for rangeIdx in range(evalBeginIdx, evalEndIdx, step):
+                        if rangeIdx >= 0 and rangeIdx < evalEndIdx:
+                            realPosCount += torch.sum(labels[evalIdx, rangeIdx:rangeIdx+evalWindowSize]).int().item()
+                    
+                    # If a predicted window does not overlap any labeled anomalous region, a FP is recorded.
+                    if predPosCount != 0 and realPosCount == 0:
+                        falsePostive += 1
+
+            precision = truePositive
+            recall = truePositive
+            f1 = 0
+            if truePositive != 0:
+                precision = truePositive / (truePositive + falsePostive)
+                recall = truePositive / (truePositive + falseNegative)
+                f1 = 2*(recall * precision) / (recall + precision)
+            print('\tth\t', format(threadhold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f')) 
+    
+    def recordResult(self, dataset, lengths, storeNames):
+        self.aeModel.eval()
+        lengths = lengths.int()
+        for validIdx in range(len(lengths)):
+            validOutput = self.reconstruct(self.aeModel, dataset, lengths)
+            for featIdx in range(dataset.shape[2]):
+                tl = validOutput[validIdx,:,featIdx]
+                t = dataset[validIdx,:,featIdx]
+                ts = t - tl
+                tlList = tl.reshape([-1])[0:lengths[validIdx]].tolist()
+                tList = t.reshape([-1])[0:lengths[validIdx]].tolist()
+                tsList = ts.reshape([-1])[0:lengths[validIdx]].abs().tolist()
+                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-feat' + str(featIdx))
+
+    def save(self):
+        # torch.save(self.ts, self.raeTsPath)
+        torch.save(self.aeModel.state_dict(), path.join(globalConfig.getModelPath(), self.modelName + ".pt"))
+
+    def load(self):
+        self.aeModel.load_state_dict(torch.load(path.join(globalConfig.getModelPath(), self.modelName+".pt")))
+
+    def reconstruct(self, mlModel, validDataset, validsetLength):
+        return mlModel(validDataset, validsetLength)
