@@ -96,7 +96,7 @@ class Trainer(ITrainer):
                 precision = truePositive / (truePositive + falsePostive)
                 recall = truePositive / (truePositive + falseNegative)
                 f1 = 2*(recall * precision) / (recall + precision)
-            print('\tth\t', threadhold, '\teval\t', '\tprecision\t', format(precision, '.3f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.3f'))    
+            print('\tth\t', format(threadhold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f'))    
 
     def recordResult(self, dataset, lengths, storeNames):
         self.mlModel.eval()
