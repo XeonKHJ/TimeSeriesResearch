@@ -29,6 +29,7 @@ class IterGruAutoencoder(nn.Module):
         self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
+        xTimestampSizes = xTimestampSizes.tolist()
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, hiddenOutput = self.gruEncoder(x)  # _x is input, size (seq_len, batch, input_size)
         paddedX, _ = torchrnn.pad_packed_sequence(x, True)

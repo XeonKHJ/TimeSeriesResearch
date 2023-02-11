@@ -1,3 +1,4 @@
+from Network.IterGruAutoencoder import IterGruAutoencoder
 from Network.LstmOneDEncodedAutoencoder import LstmOneDEncodedAutoencoder
 from Network.GruOneDEncodedAutoencoder import GruOneDEncodedAutoencoder
 from Logger.PlotLogger import PlotLogger
@@ -11,27 +12,19 @@ import torch
 import os.path as path
 
 class OneDAutoencoderConfig(ITaskConfig):
-    def __init__(self, modelFolderPath, isLogEnable):
+    def __init__(self, modelFolderPath, logger, experimentName, showTrainingInfo):
         self.modelFolderPath = modelFolderPath
-        self.isLogEnable = isLogEnable
+        self.logger = logger
+        self.modelName = experimentName
+        self.showTrainingInfo = showTrainingInfo
 
     def getConfig(self, isCuda = False):
         feature_size = 1
         output_size = 1
-        logger = PlotLogger(isPlotEnable=self.isLogEnable)
-        mlModel = GruOneDEncodedAutoencoder(feature_size,4,output_size,2)
-        taskName = 'OneDAutoencoderConfig'
+        mlModel = IterGruAutoencoder(feature_size,4,output_size,2)
+        trainer = Trainer(mlModel, self.logger, 1e-3, self.modelName, self.showTrainingInfo)
         try:
-            mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))
+            trainer.load()
         except:
             pass
-        if torch.cuda.is_available():
-            mlModel.cuda()
-        # trainer = RAETrainer(mlModel, logger, taskName, 10)
-        trainer = Trainer(mlModel, taskName, logger, 1e-3)
-        datasetSeperator = NoSepDataSeperator()
-        # logger = PlotLogger()
-        
-        dataNormalizer = DataNormalizer()
-        
-        return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
+        return trainer
