@@ -6,7 +6,7 @@ import os.path as path
 from globalConfig import globalConfig
 
 class GeneratedRAETrainer(ITrainer):
-    def __init__(self, mlModel, errorModel, logger, modelName, tsLambda=0.1):
+    def __init__(self, mlModel, errorModel, logger, modelName, tsLambda=1e-6):
         self.aeModel = mlModel
         self.errorModel = errorModel
         self.lossFunc = torch.nn.MSELoss()
@@ -24,16 +24,22 @@ class GeneratedRAETrainer(ITrainer):
     
         startTime = time.perf_counter()
         ts = self.errorModel(trainSet, trainSetLength)
+        tl = self.aeModel(trainSet, trainSetLength)
+        t = tl+ts
+        
+        ts = self.errorModel(trainSet, trainSetLength)
         tl = trainSet - ts
         x = self.aeModel(tl, trainSetLength)
         fowardTime = time.perf_counter() - startTime
-        loss1 = self.lossFunc(tl, x)
+        loss1 = self.lossFunc(tl, x) + self.tsLambda * (1/torch.norm(ts, p=1))
         loss1.backward()
         self.mlOptimzer.step()
+        self.errorOptimzer.step()
         self.mlOptimzer.zero_grad()
+        self.errorOptimzer.step()
         
-        tl = self.aeModel(tl, trainSetLength)
-        ts2 = trainSet - tl
+        tl = self.aeModel(tl, trainSetLength).detach()
+        ts2 = self.errorModel(tl, trainSetLength)
         loss2 = self.tsLambda * torch.norm(ts2, p=1)
         loss2.backward()
         self.errorOptimzer.step()

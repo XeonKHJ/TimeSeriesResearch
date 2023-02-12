@@ -25,7 +25,7 @@ class GeneratedRAENABArtiExperiment(object):
         config = GeneratedTaskConfig(self.logger, self.getName(), showTrainningInfo=True)
         trainer = config.getConfig()
         processers = [
-            PartitionDataProcessor(0.5),
+            SlidingWindowStepDataProcessor(windowSize=100, step=20),
             ShuffleDataProcessor()
         ]
         datasetSeperator = NoSepDataSeperator()        

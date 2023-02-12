@@ -70,7 +70,7 @@ if __name__ == '__main__':
             lengths = trainLabels[:, trainLabels.shape[1]-1]
             labels = trainLabels[:, 0:trainLabels.shape[1]-1]
             loss = trainer.train(trainData, lengths, labels)
-        if epoch % 500 == 0:
+        if epoch % 100 == 0:
             trainer.save()
             # for testData, testLabels in testDataLoader:
             #     lengths = testLabels[:, testLabels.shape[1]-1]
