@@ -2,9 +2,10 @@ import torch
 
 # Need to make sure dataset is sorted by data lengthes from long to short.
 class SlidingWindowStepDataProcessor:
-    def __init__(self, windowSize, step):
+    def __init__(self, windowSize, step, padRemainWindow=False):
         self.windowSize = windowSize
         self.step = step
+        self.padRemainWindow = padRemainWindow
 
     def process(self, data, lengths):
         newData = []

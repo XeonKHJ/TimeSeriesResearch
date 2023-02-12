@@ -3,6 +3,8 @@ import torch.nn
 import os.path as path
 
 from Dataset.RegularDataset import RegularDataset
+from Experiment.AheadGruAEArtiExperiment import AheadGruAEArtiExperiment
+from Experiment.GeneratedRAENABArtiExperiment import GeneratedRAENABArtiExperiment
 from Experiment.OneDGruAENABAwsExperiment import OneDGruAENABAwsExperiment
 from Experiment.RAENABArtiExperiment import RAENABArtiExperiment
 from Logger.PlotLogger import PlotLogger
@@ -25,7 +27,7 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    experiment = RAENABArtiExperiment(logger)
+    experiment = GeneratedRAENABArtiExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data
@@ -68,7 +70,7 @@ if __name__ == '__main__':
             lengths = trainLabels[:, trainLabels.shape[1]-1]
             labels = trainLabels[:, 0:trainLabels.shape[1]-1]
             loss = trainer.train(trainData, lengths, labels)
-        if epoch % 100 == 0:
+        if epoch % 500 == 0:
             trainer.save()
             # for testData, testLabels in testDataLoader:
             #     lengths = testLabels[:, testLabels.shape[1]-1]

@@ -28,6 +28,7 @@ class BiGruAutoencoder(nn.Module):
         self.isCudaSupported = torch.cuda.is_available()
 
     def forward(self, to_x, xTimestampSizes):
+        xTimestampSizes = xTimestampSizes.tolist()
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
         x, _ = torchrnn.pad_packed_sequence(x, batch_first=True)

@@ -10,30 +10,21 @@ import torch
 import os.path as path
 
 class AheadTaskConfig(ITaskConfig):
-    def __init__(self, modelFolderPath, isLogEnable, inputFeatureCount=1, outputFeatureCount=1, fileList=[]):
-        self.modelFolderPath = modelFolderPath
-        self.isLogEnable = isLogEnable
-        self.inputFeatureSize = inputFeatureCount
-        self.outputFeatureSize = outputFeatureCount
-        self.fileList = fileList
+    def __init__(self, logger, modelName, showTrainingInfo=True):
+        self.logger = logger
+        self.modelName = modelName
+        self.showTrainningInfo = showTrainingInfo
 
     def getConfig(self, isCuda = False):
-        feature_size = self.inputFeatureSize
-        output_size = self.outputFeatureSize
-        logger = PlotLogger(isPlotEnable=self.isLogEnable)
+        feature_size = 1
+        output_size = 1
         mlModel = BiGruAutoencoder(feature_size,10,output_size,4)
-        taskName = 'AheadTaskConfig'
-        try:
-            mlModel.load_state_dict(torch.load(path.join(self.modelFolderPath, taskName + ".pt")))
-        except:
-            pass
         if torch.cuda.is_available():
             mlModel.cuda()
-        # trainer = RAETrainer(mlModel, logger, taskName, 10)
-        trainer = AheadTrainer(mlModel, taskName, logger, 1e-3, self.fileList)
-        datasetSeperator = NoSepDataSeperator()
-        # logger = PlotLogger()
+        trainer = AheadTrainer(mlModel, self.modelName, self.logger, 1e-3, self.showTrainningInfo)
+        try:
+            trainer.load()
+        except:
+            pass
         
-        dataNormalizer = DataNormalizer()
-        
-        return mlModel, datasetSeperator, trainer, logger, dataNormalizer, taskName
+        return trainer

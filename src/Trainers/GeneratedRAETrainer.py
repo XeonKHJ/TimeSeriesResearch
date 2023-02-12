@@ -1,65 +1,53 @@
-from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 from Trainers.ITrainer import ITrainer
-import time
 import torch
+import time
 import os.path as path
 
 from globalConfig import globalConfig
 
-class AheadTrainer(ITrainer):
-    def __init__(self, model, taskName, logger, learningRate=1e-3, showTrainningInfo=True):
-        self.mlModel = model
+class GeneratedRAETrainer(ITrainer):
+    def __init__(self, mlModel, errorModel, logger, modelName, tsLambda=0.1):
+        self.aeModel = mlModel
+        self.errorModel = errorModel
         self.lossFunc = torch.nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.mlModel.parameters(), lr=learningRate)
-        self.modelName = taskName
+        self.tsLambda = tsLambda
+        self.mlOptimzer = torch.optim.Adam(self.aeModel.parameters(), lr=1e-3)
+        self.errorOptimzer = torch.optim.Adam(self.errorModel.parameters(), lr=1e-3)
+        # self.raeTsPath = "SavedModels/raels.pt"
+        self.epoch = 0
         self.logger = logger
-        self.windowSize = 100
-        self.step = 1
-        self.splitData = None
-        self.showTrainningInfo = showTrainningInfo
+        self.modelName = modelName
 
-    def train(self, trainSet, lengths, labelSet):
-        self.mlModel.train()
+    def train(self, trainSet, trainSetLength, labelSet):
+        self.aeModel.train()
+        self.errorModel.train()
+    
         startTime = time.perf_counter()
-        dataProcessor = SlidingWindowStepDataProcessor(self.windowSize, self.step, False)
-        eachDataLengthsAfterProcessed = list()
-        processedData = list()
-        processedLengths = list()
-        for dataIdx in range(len(lengths)):
-            data, length = dataProcessor.process(trainSet[dataIdx:dataIdx+1, :, :], lengths[dataIdx:dataIdx+1])
-            eachDataLengthsAfterProcessed.append(data.shape[0])
-            processedData.append(data)
-            processedLengths.append(length)
-        processedData = torch.cat(processedData, 0)
-        processedLengths = torch.cat(processedLengths, 0)
+        ts = self.errorModel(trainSet, trainSetLength)
+        tl = trainSet - ts
+        x = self.aeModel(tl, trainSetLength)
+        fowardTime = time.perf_counter() - startTime
+        loss1 = self.lossFunc(tl, x)
+        loss1.backward()
+        self.mlOptimzer.step()
+        self.mlOptimzer.zero_grad()
+        
+        tl = self.aeModel(tl, trainSetLength)
+        ts2 = trainSet - tl
+        loss2 = self.tsLambda * torch.norm(ts2, p=1)
+        loss2.backward()
+        self.errorOptimzer.step()
+        self.errorOptimzer.zero_grad()
+        self.mlOptimzer.zero_grad()       
 
-        output = self.mlModel(processedData, processedLengths)
-
-        offsetedOutputData = list()
-        curPos = 0
-        headSkipCount = int(self.windowSize/self.step)
-        for dataIdx in range(len(lengths)):
-            splitedLength = eachDataLengthsAfterProcessed[dataIdx]
-            curOutput = output[dataIdx:dataIdx+splitedLength]
-            curSplitedData = processedData[dataIdx:dataIdx+splitedLength]
-            curOutput = curOutput[0:curOutput.shape[0]-headSkipCount, :,:]
-            curOutput = torch.cat((curSplitedData[0:headSkipCount, :, :], curOutput), 0)
-            offsetedOutputData.append(curOutput)
-            curPos += eachDataLengthsAfterProcessed[dataIdx]
-        processedOutput = torch.cat(offsetedOutputData)
-        loss = self.lossFunc(processedOutput, processedData)
-        outputedTime = time.perf_counter()
-        loss.backward()
-        self.optimizer.step()
-        self.optimizer.zero_grad()
-        backwardTime = time.perf_counter()
-        print("\tloss\t", loss.item(), "\tforward\t", outputedTime-startTime, "\tlosstime\t", backwardTime-outputedTime)
-
+        backwardTime = time.perf_counter() - startTime
+        loss = loss1 + loss2
+        print("loss\t", format(loss.item(), ".7f"), "\t", format(loss1.item(), ".7f"), "\t", format(loss2.item() / self.tsLambda, ".7f"), "\tfoward\t", format(fowardTime, ".3f"), "\tbackward\t", format(backwardTime, ".3f"))
         return loss
 
     def evalResult(self, validDataset, validsetLengths, labels):
-        self.mlModel.eval()
-        reconstructData = self.reconstruct(self.mlModel, validDataset, validsetLengths)
+        self.aeModel.eval()
+        reconstructData = self.aeModel(validDataset, validsetLengths)
         error = torch.abs(reconstructData-validDataset)
         evalWindowSize = 100
         for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
@@ -118,12 +106,12 @@ class AheadTrainer(ITrainer):
                 recall = truePositive / (truePositive + falseNegative)
                 f1 = 2*(recall * precision) / (recall + precision)
             print('\tth\t', format(threadhold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f')) 
-
+    
     def recordResult(self, dataset, lengths, storeNames):
-        self.mlModel.eval()
+        self.aeModel.eval()
         lengths = lengths.int()
         for validIdx in range(len(lengths)):
-            validOutput = self.reconstruct(self.mlModel, dataset, lengths)
+            validOutput = self.reconstruct(self.aeModel, dataset, lengths)
             for featIdx in range(dataset.shape[2]):
                 tl = validOutput[validIdx,:,featIdx]
                 t = dataset[validIdx,:,featIdx]
@@ -134,24 +122,13 @@ class AheadTrainer(ITrainer):
                 self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-feat' + str(featIdx))
 
     def save(self):
-        filename = self.modelName + ".pt"
-        torch.save(self.mlModel.state_dict(), path.join(globalConfig.getModelPath(), filename))
+        # torch.save(self.ts, self.raeTsPath)
+        torch.save(self.aeModel.state_dict(), path.join(globalConfig.getModelPath(), self.modelName + "-ae.pt"))
+        torch.save(self.errorModel.state_dict(), path.join(globalConfig.getModelPath(), self.modelName + "-error.pt"))
 
     def load(self):
-        filename = self.modelName + ".pt"
-        self.mlModel.load_state_dict(torch.load(path.join(globalConfig.getModelPath(), filename))) 
+        self.aeModel.load_state_dict(torch.load(path.join(globalConfig.getModelPath(), self.modelName+"-ae.pt")))
+        self.errorModel.load_state_dict(torch.load(path.join(globalConfig.getModelPath(), self.modelName + "-error.pt")))
 
     def reconstruct(self, mlModel, validDataset, validsetLength):
-        reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))
-        preIdx = -100
-        for idx in range(0, validDataset.shape[1] - self.windowSize, self.windowSize):
-            if idx+2*self.windowSize > reconstructSeqs.shape[1]:
-                break
-            lengths = torch.tensor(self.windowSize).repeat(validDataset.shape[0]).int()
-            reconstructSeqs[:,idx+self.windowSize:idx+2*self.windowSize,:] = mlModel(validDataset[:,idx:idx+self.windowSize,:], lengths)
-            preIdx = idx
-            
-        lengths = torch.tensor(self.windowSize).repeat(validDataset.shape[0]).int()
-        reconstructSeqs[:,reconstructSeqs.shape[1]-self.windowSize:reconstructSeqs.shape[1],:] = mlModel(validDataset[:,validDataset.shape[1]-2*self.windowSize:validDataset.shape[1]-self.windowSize:,:], lengths)
-        reconstructSeqs[:,0:self.windowSize, :] = validDataset[:, 0:self.windowSize, :]
-        return reconstructSeqs
+        return mlModel(validDataset, validsetLength)

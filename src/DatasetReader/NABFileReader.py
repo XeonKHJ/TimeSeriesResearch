@@ -8,25 +8,16 @@ import re
 import os.path as path
 from DatasetReader.DatasetReader import IDatasetReader
 
-class NABFoldersReader(IDatasetReader):
-    def __init__(self, repoPath, dataType):
+class NABFileReader(IDatasetReader):
+    def __init__(self, repoPath, filePath):
         super().__init__()
         self.repoPath = repoPath
         self.dataFolders = list()
         self.labelPath = os.path.join(repoPath, 'labels', 'combined_labels.json')
-        if dataType == 'artificial':
-            self.dataFolders.append(os.path.join(repoPath, 'data', 'artificialNoAnomaly'))
-            self.dataFolders.append(os.path.join(repoPath, 'data', 'artificialWithAnomaly'))
-        else:
-            self.dataFolders.append(os.path.join(repoPath, 'data', dataType))
-
+        self.dataFolders.append(os.path.join(repoPath, 'data', filePath))
     def read(self):
         label = self.readLabels()
-        fileList = list()
-        for folder in self.dataFolders:
-            curFileList = os.listdir(folder)
-            for file in curFileList:
-                fileList.append(os.path.join(folder, file))
+        fileList = self.dataFolders
         fulldata = list()
         dataTimestampLengths = list()
         featureSize = 1
