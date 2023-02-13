@@ -27,7 +27,7 @@ class BiGruAutoencoder(nn.Module):
         # self.finalCalculation = nn.Sigmoid()
         self.isCudaSupported = torch.cuda.is_available()
 
-    def forward(self, to_x, xTimestampSizes):
+    def forward(self, to_x, xTimestampSizes, outputLength = None):
         xTimestampSizes = xTimestampSizes.tolist()
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, b = self.lstmEncoder(x)  # _x is input, size (seq_len, batch, input_size)
@@ -40,7 +40,9 @@ class BiGruAutoencoder(nn.Module):
     
         x = self.forwardCalculation(x)
         # x = self.finalCalculation(x)
-
+        if outputLength == None:
+            outputLength = to_x.shape[1]
+        x = x[:, x.shape[1]-outputLength:x.shape[1]]
         return x
 
     def getInputTensor(self, dataset, datasetLengths):
