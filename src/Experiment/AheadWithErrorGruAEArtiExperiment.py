@@ -20,7 +20,7 @@ class AheadWithErrorGruAEArtiExperiment(object):
         return "AheadWithErrorGruAEArti"
 
     def getExperimentConfig(self):
-        normalDataReader = NABFileReader("../../NAB/", "artificialWithAnomaly/art_daily_jumpsdown.csv")
+        normalDataReader = NABFileReader("../../NAB/", "artificialWithAnomaly/art_daily_flatmiddle.csv")
         dataReader = NABFileReader("../../NAB/", "artificial")
         config = AheadWithErrorTaskConfig(self.logger, self.getName(), showTrainingInfo=True)
         trainer = config.getConfig()

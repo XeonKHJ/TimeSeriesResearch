@@ -3,6 +3,7 @@ from Trainers.ITrainer import ITrainer
 import time
 import torch
 import os.path as path
+from Utils import DynamicThreshold
 
 from globalConfig import globalConfig
 
@@ -61,54 +62,30 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         reconstructData = self.reconstruct(self.forcastModel, validDataset, validsetLengths)
         error = torch.abs(reconstructData-validDataset)
         evalWindowSize = 100
+        threadholders = list()
         for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
+            threadholders.append(DynamicThreshold(threadhold, evalWindowSize))
+        for threadholder in threadholders:
             truePositive = 0
             falsePostive = 0
             falseNegative = 0
             step = 20
-            for evalIdx in range(0, len(validsetLengths)):
-                evalOutput = error[evalIdx, 0:validsetLengths[evalIdx].int().item()]
-                detectResult = evalOutput > threadhold
-                for labelIdx in range(0, validsetLengths[evalIdx].int().item(), evalWindowSize):
-                    realPosCount = 0
-                    predPosCount = 0
+            thresholds = threadholder.getThreshold(validDataset)
+            compareResult = threadholder.compare(thresholds, validDataset, reconstructData)
+            for dataIdx in range(len(validsetLengths)):
+                for windowIdx in range(0, validDataset.shape[1], evalWindowSize):
+                    curLabel = (labels[dataIdx, windowIdx:windowIdx+evalWindowSize].sum() > 0).bool().item()
+                    evalRes = (compareResult[dataIdx, windowIdx:windowIdx+evalWindowSize].sum()).bool().item()
+                    if curLabel:
+                        if evalRes:
+                            truePositive += 1
+                        else:
+                            falseNegative += 1
+                    else:
+                        if evalRes:
+                            falsePostive += 1
 
-                    labelSegement = labels[evalIdx, labelIdx:labelIdx+evalWindowSize]
-                    realPosCount = torch.sum(labelSegement)
-
-                    knownDataLabel = labels[:, evalIdx:evalIdx + evalWindowSize]
-                    evalBeginIdx = evalIdx + step - evalWindowSize
-                    evalEndIdx = evalIdx + evalWindowSize - step
-
-                    for rangeIdx in range(evalBeginIdx, evalEndIdx, step):
-                        if rangeIdx >= 0 and rangeIdx < evalEndIdx:
-                            diff = detectResult[rangeIdx:rangeIdx+evalWindowSize]
-                            predPosCount += torch.sum(diff).int().item()
-
-                    # If a known anomalous window overlaps any predicted windows, a TP is recorded.
-                    if realPosCount != 0 and predPosCount != 0:
-                        truePositive += 1
-
-                    # If a known anomalous window does not overlap any predicted windows, a FN is recorded.
-                    elif realPosCount != 0 and predPosCount == 0:
-                        falseNegative += 1
-
-                for predIdx in range(0, evalOutput.shape[1], evalWindowSize):
-                    realPosCount = 0
-                    predPosCount = 0
-                    diff = detectResult[rangeIdx:rangeIdx+evalWindowSize]
-                    predPosCount = torch.sum(diff).int().item()
-                    evalBeginIdx = evalIdx + step - evalWindowSize
-                    evalEndIdx = evalIdx + evalWindowSize - step
-
-                    for rangeIdx in range(evalBeginIdx, evalEndIdx, step):
-                        if rangeIdx >= 0 and rangeIdx < evalEndIdx:
-                            realPosCount += torch.sum(labels[evalIdx, rangeIdx:rangeIdx+evalWindowSize]).int().item()
-                    
-                    # If a predicted window does not overlap any labeled anomalous region, a FP is recorded.
-                    if predPosCount != 0 and realPosCount == 0:
-                        falsePostive += 1
-
+            
             precision = truePositive
             recall = truePositive
             f1 = 0
