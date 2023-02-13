@@ -21,33 +21,11 @@ class AheadTrainer(ITrainer):
     def train(self, trainSet, lengths, labelSet):
         self.mlModel.train()
         startTime = time.perf_counter()
-        dataProcessor = SlidingWindowStepDataProcessor(self.windowSize, self.step, False)
-        eachDataLengthsAfterProcessed = list()
-        processedData = list()
-        processedLengths = list()
-        for dataIdx in range(len(lengths)):
-            data, length = dataProcessor.process(trainSet[dataIdx:dataIdx+1, :, :], lengths[dataIdx:dataIdx+1])
-            eachDataLengthsAfterProcessed.append(data.shape[0])
-            processedData.append(data)
-            processedLengths.append(length)
-        processedData = torch.cat(processedData, 0)
-        processedLengths = torch.cat(processedLengths, 0)
+        preSet = trainSet[:,0:int(trainSet.shape[1]/2), :]
+        latterSet = trainSet[:,int(trainSet.shape[1]/2):trainSet.shape[1], :]
 
-        output = self.mlModel(processedData, processedLengths)
-
-        offsetedOutputData = list()
-        curPos = 0
-        headSkipCount = int(self.windowSize/self.step)
-        for dataIdx in range(len(lengths)):
-            splitedLength = eachDataLengthsAfterProcessed[dataIdx]
-            curOutput = output[dataIdx:dataIdx+splitedLength]
-            curSplitedData = processedData[dataIdx:dataIdx+splitedLength]
-            curOutput = curOutput[0:curOutput.shape[0]-headSkipCount, :,:]
-            curOutput = torch.cat((curSplitedData[0:headSkipCount, :, :], curOutput), 0)
-            offsetedOutputData.append(curOutput)
-            curPos += eachDataLengthsAfterProcessed[dataIdx]
-        processedOutput = torch.cat(offsetedOutputData)
-        loss = self.lossFunc(processedOutput, processedData)
+        output = self.mlModel(preSet, lengths / 2)
+        loss = self.lossFunc(output, latterSet)
         outputedTime = time.perf_counter()
         loss.backward()
         self.optimizer.step()
