@@ -31,7 +31,7 @@ class PlotLogger(ILogger):
             else:
                 savePath = os.path.join(folderName, picname)
                 matplotlib.pyplot.savefig(savePath)
-            # print(picname, " saved.")
+            print(picname, " saved.")
         matplotlib.pyplot.close()
 
     def logResult(self, ogData, predictData):

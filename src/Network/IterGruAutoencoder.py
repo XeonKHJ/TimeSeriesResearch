@@ -28,7 +28,7 @@ class IterGruAutoencoder(nn.Module):
         self.finalCalculation = nn.Sigmoid()
         self.isCudaSupported = torch.cuda.is_available()
 
-    def forward(self, to_x, xTimestampSizes):
+    def forward(self, to_x, xTimestampSizes, outputLength=None):
         xTimestampSizes = xTimestampSizes.tolist()
         x = torchrnn.pack_padded_sequence(to_x, xTimestampSizes, True)
         x, hiddenOutput = self.gruEncoder(x)  # _x is input, size (seq_len, batch, input_size)
@@ -42,7 +42,9 @@ class IterGruAutoencoder(nn.Module):
         # decoderOutput = torch.zeros([to_x.shape[0], to_x.shape[1], self.hidden_size], device=torch.device('cuda'), requires_grad=True)
         encoded, encodedH = self.gruDecoder(encoded, hiddenOutput)
         decoderOutput = encoded
-        for idx in range(1, to_x.shape[1]):
+        if outputLength == None:
+            outputLength = to_x.shape[1]
+        for idx in range(1, outputLength):
             decoderOutputUnit, encodedH = self.gruDecoder(decoderOutput[:, idx-1, :].reshape(paddedX.shape[0], 1, -1), encodedH)
             decoderOutput = torch.cat((decoderOutput, decoderOutputUnit), 1)
         x = self.forwardCalculation(decoderOutput)
