@@ -1,8 +1,8 @@
 import torch
 
 class DynamicThreshold(object):
-    def __init__(self, rate, windowSize) -> None:
-        self.rate = rate
+    def __init__(self, meanRate=0.3, stdRate=0.5, windowSize=100) -> None:
+        self.rate = meanRate
         self.windowSize = windowSize
 
     def getThreshold(self, tensor):
@@ -29,7 +29,7 @@ class PaperDynamicThreshold(object):
         self.windowSize = windowSize
 
     def getThreshold(self, tensor):
-        
+
 
         threasholds = torch.zeros(tensor.shape)
         for idx in range(0, tensor.shape[1], self.windowSize):
