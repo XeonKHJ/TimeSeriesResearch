@@ -64,8 +64,9 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         evalWindowSize = 100
         step = 20
         thresholder = list()
-        for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
-            thresholder.append(DynamicThreshold(threadhold, step))
+        for threadhold in [0.3, 0.2, 0.1]:
+            for stdMean in [1, 0.75, 0.5, 0.4, 0.3]:
+                thresholder.append(DynamicThreshold(threadhold, stdMean, step))
         for threadholder in thresholder:
             truePositive = 0
             falsePostive = 0
@@ -147,11 +148,12 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                 ts = t - tl
                 tlList = tl.reshape([-1])[0:lengths[validIdx]].tolist()
                 tList = t.reshape([-1])[0:lengths[validIdx]].tolist()
+                tsNoAbs = ts.reshape([-1])[0:lengths[validIdx]].tolist()
                 tsList = ts.reshape([-1])[0:lengths[validIdx]].abs().tolist()
                 errorList = error.reshape([-1])[0:lengths[validIdx]].tolist()
                 sumList = sumOutput.reshape([-1])[0:lengths[validIdx]].tolist()
                 self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-forcast-' '-feat' + str(featIdx))
-                self.logger.logResults([tList, errorList], ["t", "error"], self.modelName + '-' + storeNames[validIdx] + '-error-' '-feat' + str(featIdx))
+                self.logger.logResults([tList, errorList, tsNoAbs], ["t", "error", "tsNoAbs"], self.modelName + '-' + storeNames[validIdx] + '-error-' '-feat' + str(featIdx))
                 self.logger.logResults([tList, sumList], ["t", "sum"], self.modelName + '-' + storeNames[validIdx] + '-sum-' '-feat' + str(featIdx))
 
     def save(self):
