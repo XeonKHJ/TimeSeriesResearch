@@ -20,8 +20,10 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         self.step = 1
         self.splitData = None
         self.showTrainningInfo = showTrainningInfo
-        self.lambda1 = 1.5
+        self.lambda1 = 0.8
         self.lambda2 = 1e-3
+        self.toRecordThresholds = None
+        self.toRecordDiffs =None
 
     def train(self, trainSet, lengths, labelSet):
         self.forcastModel.train()
@@ -53,27 +55,33 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         self.errorOptimizer.step()
         
         backwardTime = time.perf_counter()
-        print("\tforcast loss\t", format(forcastLoss.item(), ".7f"), "\treal loss\t", format(realLoss.item(), ".7f"),"\tloss1\t", format(loss1.item(),".7f"),  "\tloss2\t", format(loss2.item(),".7f"), '\terror\t', torch.norm(error, p=1).item())
+        if self.showTrainningInfo:
+            print("\tforcast loss\t", format(forcastLoss.item(), ".7f"), "\treal loss\t", format(realLoss.item(), ".7f"),"\tloss1\t", format(loss1.item(),".7f"),  "\tloss2\t", format(loss2.item(),".7f"), '\terror\t', torch.norm(error, p=1).item())
 
         return forcastLoss
 
     def evalResult(self, validDataset, validsetLengths, labels):
         self.forcastModel.eval()
         reconstructData = self.reconstruct(self.forcastModel, validDataset, validsetLengths)
-        error = torch.abs(reconstructData-validDataset)
+        self.toRecordThresholds = None
+        self.toRecordDiffs =None
         evalWindowSize = 100
         step = 20
-        thresholder = list()
-        for threadhold in [0.3, 0.2, 0.1]:
+        thresholders = list()
+        for threadhold in [0.4,0.3, 0.2, 0.1]:
             for stdMean in [1, 0.75, 0.5, 0.4, 0.3]:
-                thresholder.append(DynamicThreshold(threadhold, stdMean, step))
-        for threadholder in thresholder:
+                thresholders.append(DynamicThreshold(threadhold, stdMean,evalWindowSize))
+        maxf1 = 0
+        for threadholder in thresholders:
             truePositive = 0
             falsePostive = 0
             falseNegative = 0
             
-            thresholds = threadholder.getThreshold(validDataset)
-            compareResult = threadholder.compare(thresholds, validDataset, reconstructData)
+            thresholds = threadholder.getThreshold(validDataset, validsetLengths)
+            if self.toRecordDiffs == None:
+                self.toRecordDiffs = threadholder.getDiffs(validDataset, reconstructData, validsetLengths)
+                
+            compareResult = threadholder.compare(thresholds, validDataset, reconstructData, validsetLengths)
             for dataIdx in range(0, len(validsetLengths)):
                 detectResult = compareResult[dataIdx, 0:validsetLengths[dataIdx].int().item()]
                 curLabel = labels[dataIdx, 0:validsetLengths[dataIdx].int().item()]
@@ -123,7 +131,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                     if predPosCount != 0 and realPosCount == 0:
                         falsePostive += 1
 
-
+            
             
             precision = truePositive
             recall = truePositive
@@ -132,7 +140,12 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                 precision = truePositive / (truePositive + falsePostive)
                 recall = truePositive / (truePositive + falseNegative)
                 f1 = 2*(recall * precision) / (recall + precision)
-            print('\tth\t', format(threadhold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f')) 
+
+            
+            if f1 >= maxf1:
+                maxf1 = f1
+                self.toRecordThresholds = thresholds
+            print('stdrate', threadholder.stdRate, '\t', threadholder.meanRate, '\tth\t', format(threadhold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f')) 
 
     def recordResult(self, dataset, lengths, storeNames):
         self.forcastModel.eval()
@@ -153,9 +166,10 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                 errorList = error.reshape([-1])[0:lengths[validIdx]].tolist()
                 sumList = sumOutput.reshape([-1])[0:lengths[validIdx]].tolist()
                 self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-forcast-' '-feat' + str(featIdx))
-                self.logger.logResults([tList, errorList, tsNoAbs], ["t", "error", "tsNoAbs"], self.modelName + '-' + storeNames[validIdx] + '-error-' '-feat' + str(featIdx))
+                self.logger.logResults([tList, tsNoAbs, errorList], ["t", "tsNoAbs", "error"], self.modelName + '-' + storeNames[validIdx] + '-error-' '-feat' + str(featIdx))
                 self.logger.logResults([tList, sumList], ["t", "sum"], self.modelName + '-' + storeNames[validIdx] + '-sum-' '-feat' + str(featIdx))
-
+                if self.toRecordThresholds != None:
+                    self.logger.logResults([self.toRecordDiffs[validIdx, 0:lengths[validIdx]].reshape(-1).tolist(), self.toRecordThresholds[validIdx, 0:lengths[validIdx]].reshape(-1).tolist()], ["error", "treshold"], self.modelName + '-' + storeNames[validIdx] + '-threshold-' '-feat' + str(featIdx))
     def save(self):
         forcastModelName = self.modelName + "-forcast.pt"
         errorModelName = self.modelName + "-error.pt"

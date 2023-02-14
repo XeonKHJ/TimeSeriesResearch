@@ -19,8 +19,8 @@ class AheadWithErrorTaskConfig(ITaskConfig):
     def getConfig(self, isCuda = False):
         feature_size = 1
         output_size = 1
-        forcastModel = BiGruAutoencoder(feature_size,10,output_size,4)
-        errorModel = IterGruAutoencoder(feature_size,10,output_size,4)
+        forcastModel = BiGruAutoencoder(feature_size,10,output_size,2)
+        errorModel = IterGruAutoencoder(feature_size,10,output_size,2)
         if torch.cuda.is_available():
             forcastModel.cuda()
             errorModel.cuda()

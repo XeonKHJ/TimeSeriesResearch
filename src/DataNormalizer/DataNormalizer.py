@@ -3,9 +3,10 @@ import torch
 import sys
 
 class DataNormalizer(IDataNormalizer):
-    def __init__(self):
+    def __init__(self, perData = False):
         self.max = None
         self.min = None
+        self.perData = perData
         pass
 
     def addDatasetToRef(self, dataset):
