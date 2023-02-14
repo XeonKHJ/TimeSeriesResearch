@@ -1,3 +1,4 @@
+from Experiment.AheadWithErrorGruAENATAwsEC2CPUExperiment import AheadWithErrorGruAENATAwsEC2DiskWriteExperiment
 import torch
 import torch.nn
 import os.path as path
@@ -5,6 +6,7 @@ import os.path as path
 from Dataset.RegularDataset import RegularDataset
 from Experiment.AheadGruAEArtiExperiment import AheadGruAEArtiExperiment
 from Experiment.AheadWithErrorGruAEArtiExperiment import AheadWithErrorGruAEArtiExperiment
+from Experiment.AheadWithErrorGruAENATAwsEC2CPUExperiment import AheadWithErrorGruAENATAwsExperiment
 from Experiment.GeneratedRAENABArtiExperiment import GeneratedRAENABArtiExperiment
 from Experiment.OneDGruAENABAwsExperiment import OneDGruAENABAwsExperiment
 from Experiment.RAENABArtiExperiment import RAENABArtiExperiment
@@ -28,17 +30,17 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    experiment = AheadWithErrorGruAEArtiExperiment(logger)
+    experiment = AheadWithErrorGruAENATAwsEC2DiskWriteExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data
     fullDataTensor, fullDataLenghts, fullDataLabels, fileList = trainDataReader.read()
     validDataTensor, validDataLengths, validDataLabels, validFileList = validDataReader.read()
 
-    dataNormalizer.addDatasetToRef(fullDataTensor)
-    fullDataTensor = dataNormalizer.normalizeDataset(fullDataTensor)
+    dataNormalizer.addDatasetToRef(fullDataTensor, fullDataLenghts)
+    fullDataTensor = dataNormalizer.normalizeDataset(fullDataTensor, fullDataLenghts)
     fullDataTensor = torch.cat((fullDataTensor, fullDataLabels), 2)
-    validDataTensor = dataNormalizer.normalizeDataset(validDataTensor)
+    validDataTensor = dataNormalizer.normalizeDataset(validDataTensor, validDataLengths)
     validDataTensor = torch.cat((validDataTensor, validDataLabels), 2)
 
     # displayDataTensor, displayDataLenghts, displayDataLabels, displayFileList = dataReader.read()
@@ -83,6 +85,6 @@ if __name__ == '__main__':
                 newFileList = list() 
                 for fileName in validFileList:
                      newFileList.append(path.splitext(path.basename(fileName))[0])
-                trainer.recordResult(validData, lengths, newFileList)
-                trainer.evalResult(validData, lengths, labels)                  
+                trainer.evalResult(validData, lengths, labels)  
+                trainer.recordResult(validData, lengths, newFileList)           
         epoch += 1
