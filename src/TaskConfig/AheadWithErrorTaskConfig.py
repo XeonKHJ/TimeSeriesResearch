@@ -20,11 +20,13 @@ class AheadWithErrorTaskConfig(ITaskConfig):
         feature_size = 1
         output_size = 1
         forcastModel = BiGruAutoencoder(feature_size,10,output_size,2)
+        backwardModel = BiGruAutoencoder(feature_size,10,output_size,2)
         errorModel = IterGruAutoencoder(feature_size,10,output_size,2)
         if torch.cuda.is_available():
             forcastModel.cuda()
             errorModel.cuda()
-        trainer = AheadWithErrorGeneratorTrainer(forcastModel,errorModel, self.modelName, self.logger, 1e-3, self.showTrainningInfo)
+            backwardModel.cuda()
+        trainer = AheadWithErrorGeneratorTrainer(forcastModel,backwardModel,errorModel, self.modelName, self.logger, 1e-3, self.showTrainningInfo)
         try:
             trainer.load()
         except:

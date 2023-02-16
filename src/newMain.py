@@ -1,4 +1,4 @@
-from Experiment.AheadWithErrorGruAENATAwsEC2CPUExperiment import AheadWithErrorGruAENATAwsEC2DiskWriteExperiment
+from Experiment.AheadWithErrorGruAENATAwsEC2CPUExperiment import AheadWithErrorGruAENATAwsEC2CPUExperiment
 import torch
 import torch.nn
 import os.path as path
@@ -6,7 +6,7 @@ import os.path as path
 from Dataset.RegularDataset import RegularDataset
 from Experiment.AheadGruAEArtiExperiment import AheadGruAEArtiExperiment
 from Experiment.AheadWithErrorGruAEArtiExperiment import AheadWithErrorGruAEArtiExperiment
-from Experiment.AheadWithErrorGruAENATAwsEC2CPUExperiment import AheadWithErrorGruAENATAwsExperiment
+from Experiment.AheadWithErrorGruAENATAwsEC2DiskWriteExperiment import AheadWithErrorGruAENATAwsEC2DiskWriteExperiment
 from Experiment.GeneratedRAENABArtiExperiment import GeneratedRAENABArtiExperiment
 from Experiment.OneDGruAENABAwsExperiment import OneDGruAENABAwsExperiment
 from Experiment.RAENABArtiExperiment import RAENABArtiExperiment
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    experiment = AheadWithErrorGruAENATAwsEC2DiskWriteExperiment(logger)
+    experiment = AheadWithErrorGruAENATAwsEC2CPUExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data

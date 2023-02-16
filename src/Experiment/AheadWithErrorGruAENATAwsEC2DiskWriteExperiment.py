@@ -21,7 +21,7 @@ class AheadWithErrorGruAENATAwsEC2DiskWriteExperiment(object):
         self.logger = logger
 
     def getName(self):
-        return "AheadWithErrorGruAENATAws"
+        return "AheadWithErrorGruAENATAwsEC2DiskWrite"
 
     def getExperimentConfig(self):
         normalDataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "ec2_disk_write_bytes")

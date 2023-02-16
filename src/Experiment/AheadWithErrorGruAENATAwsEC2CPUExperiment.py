@@ -24,8 +24,8 @@ class AheadWithErrorGruAENATAwsEC2CPUExperiment(object):
         return "AheadWithErrorGruAENATAwsEC2CPU"
 
     def getExperimentConfig(self):
-        normalDataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "ec2_cpu_utilization")
-        # normalDataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_24ae8d.csv")
+        # normalDataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "ec2_cpu_utilization")
+        normalDataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv")
         # dataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv")
         config = AheadWithErrorTaskConfig(self.logger, self.getName(), showTrainingInfo=False)
         trainer = config.getConfig()
