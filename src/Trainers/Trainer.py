@@ -45,7 +45,7 @@ class Trainer(ITrainer):
         maxPr = 0
         maxRc = 0
         self.bestThreshold = 0
-        for threshold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
+        for threshold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001, 1e-5, 1e-6, 1e-7,0]:
             truePositive = 0
             falsePostive = 0
             falseNegative = 0

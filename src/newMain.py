@@ -8,7 +8,15 @@ from Experiment.AheadGruAEArtiExperiment import AheadGruAEArtiExperiment
 from Experiment.AheadWithErrorGruAEArtiExperiment import AheadWithErrorGruAEArtiExperiment
 from Experiment.AheadWithErrorGruAENATAwsEC2DiskWriteExperiment import AheadWithErrorGruAENATAwsEC2DiskWriteExperiment
 from Experiment.GeneratedRAENABArtiExperiment import GeneratedRAENABArtiExperiment
-from Experiment.OneDGruAENABAwsExperiment import OneDGruAENABAwsExperiment
+from Experiment.GruAENABAWSExperiment import GruAENABAWSExperiment
+from Experiment.OneDGruAENABAwsEC2CPUExperiment import OneDGruAENABAwsEC2CPUExperiment
+from Experiment.OneDGruAENABAwsEC2DiskWriteExperiment import OneDGruAENABAwsEC2DiskWriteExperiment
+from Experiment.OneDGruAENABAwsEC2NetwworkInExperiment import OneDGruAENABAwsEC2NetworkInExperiment
+from Experiment.OneDGruAENABAwsElbReqExperiment import OneDGruAENABAwsElbReqExperiment
+from Experiment.OneDGruAENABTraOccuExperiment import OneDGruAENABTraOccuExperiment
+from Experiment.OneDGruAENABTraSpdExperiment import OneDGruAENABTraSpdExperiment
+from Experiment.OneDGruAENABTraTtExperiment import OneDGruAENABTraTtExperiment
+from Experiment.OneDGruAENABTweetExperiment import OneDGruAENABTweetExperiment
 from Experiment.RAENABArtiExperiment import RAENABArtiExperiment
 from Logger.PlotLogger import PlotLogger
 
@@ -30,7 +38,7 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    experiment = OneDGruAENABAwsExperiment(logger)
+    experiment = OneDGruAENABTraTtExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data
@@ -73,7 +81,7 @@ if __name__ == '__main__':
             lengths = trainLabels[:, trainLabels.shape[1]-1]
             labels = trainLabels[:, 0:trainLabels.shape[1]-1]
             loss = trainer.train(trainData, lengths, labels)
-        if epoch % 200 == 0:
+        if epoch % 1000 == 0:
             trainer.save()
             # for testData, testLabels in testDataLoader:
             #     lengths = testLabels[:, testLabels.shape[1]-1]

@@ -66,16 +66,16 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         loss3.backward()
         self.errorOptimizer.step()
 
-        # self.backwardOptimzer.zero_grad()
-        # backwardOutput = self.backwardModel(latterSet, lengths / 2)
-        # realLoss = self.lossFunc(backwardOutput, preSet)
-        # realLoss.backward()
-        # self.backwardOptimzer.step()
+        self.backwardOptimzer.zero_grad()
+        backwardOutput = self.backwardModel(latterSet, lengths / 2)
+        realLoss = self.lossFunc(backwardOutput, preSet)
+        realLoss.backward()
+        self.backwardOptimzer.step()
         
         backwardTime = time.perf_counter()
         if self.showTrainningInfo or True:
-            print(loss3)
-            # print("\tforcast\t", format(forcastLoss.item(), ".7f"), "\treal\t", format(realLoss.item(), ".7f"),"\tloss1\t", format(loss1.item(),".7f"),  "\tloss2\t", format(loss2.item(),".7f"), '\terror\t', torch.norm(error, p=1).item())
+            # print(loss3)
+            print("\tforcast\t", format(forcastLoss.item(), ".7f"), "\treal\t", format(realLoss.item(), ".7f"),"\tloss1\t", format(loss1.item(),".7f"),  "\tloss2\t", format(loss2.item(),".7f"), '\terror\t', torch.norm(error, p=1).item())
 
         return loss3
 
@@ -170,6 +170,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         validOutput = self.reconstruct(self.forcastModel, dataset, lengths)
         errorOutput = self.reconstructError(dataset, lengths)
         sumOutput = validOutput + errorOutput
+        threshold = 0.1
         for validIdx in range(len(lengths)):
             for featIdx in range(dataset.shape[2]):
                 tl = validOutput[validIdx,0:lengths[validIdx],featIdx]
@@ -183,9 +184,13 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                 tsList = ts.reshape([-1]).abs().tolist()
                 errorList = error.reshape([-1]).tolist()
                 sumList = sum.reshape([-1]).tolist()
-                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-forcast-' '-feat' + str(featIdx))
-                self.logger.logResults([tList, tsNoAbs, errorList], ["t", "tsNoAbs", "error"], self.modelName + '-' + storeNames[validIdx] + '-error-' '-feat' + str(featIdx))
-                self.logger.logResults([tList, sumList], ["t", "sum"], self.modelName + '-' + storeNames[validIdx] + '-sum-' '-feat' + str(featIdx))
+                fixedThresholdList = torch.zeros(ts.shape)
+                fixedThresholdList[:] = threshold
+                fixedThresholdList = fixedThresholdList.reshape([-1]).tolist()
+                self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-forcast-feat' + str(featIdx))
+                self.logger.logResults([tList, tsNoAbs, errorList], ["t", "tsNoAbs", "error"], self.modelName + '-' + storeNames[validIdx] + '-error-feat' + str(featIdx))
+                self.logger.logResults([tList, sumList], ["t", "sum"], self.modelName + '-' + storeNames[validIdx] + '-sum-feat' + str(featIdx))
+                self.logger.logResults([tsNoAbs, fixedThresholdList], ["ts", "fixed threshold"], self.modelName + '-' + storeNames[validIdx] + '-fixthreshold-feat' + str(featIdx))
                 if self.toRecordThresholds != None:
                     self.logger.logResults([self.toRecordDiffs[validIdx, 0:lengths[validIdx]].abs().reshape(-1).tolist(), self.toRecordThresholds[validIdx, 0:lengths[validIdx]].reshape(-1).tolist()], ["error", "treshold"], self.modelName + '-' + storeNames[validIdx] + '-threshold-' '-feat' + str(featIdx))
     def save(self):
