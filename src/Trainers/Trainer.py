@@ -40,15 +40,19 @@ class Trainer(ITrainer):
             toEvalOutputTensor = self.mlModel(toEvalDataSplitedTensor, toEvalDataLength)
             diff = torch.abs(toEvalOutputTensor - toEvalDataSplitedTensor)
             toEvalSplitedDataTensorList.append({"data":toEvalDataSplitedTensor, "length":toEvalDataLength, "output": toEvalOutputTensor})
-
-        for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
+        
+        maxF1 = 0
+        maxPr = 0
+        maxRc = 0
+        self.bestThreshold = 0
+        for threshold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
             truePositive = 0
             falsePostive = 0
             falseNegative = 0
             step = 20
             for evalIdx in range(0, len(validsetLengths)):
                 evalOutput = toEvalSplitedDataTensorList[evalIdx]["output"]
-                detectResult = evalOutput > threadhold
+                detectResult = evalOutput > threshold
                 for labelIdx in range(0, validsetLengths[evalIdx].int().item(), evalWindowSize):
                     realPosCount = 0
                     predPosCount = 0
@@ -73,7 +77,7 @@ class Trainer(ITrainer):
                     elif realPosCount != 0 and predPosCount == 0:
                         falseNegative += 1
 
-                for predIdx in range(0, evalOutput.shape[1], evalWindowSize):
+                for predIdx in range(0, evalOutput.shape[0], evalWindowSize):
                     realPosCount = 0
                     predPosCount = 0
                     diff = detectResult[rangeIdx]
@@ -91,12 +95,17 @@ class Trainer(ITrainer):
 
             precision = truePositive
             recall = truePositive
-            f1 = 0
+            f1 = -1
             if truePositive != 0:
                 precision = truePositive / (truePositive + falsePostive)
                 recall = truePositive / (truePositive + falseNegative)
                 f1 = 2*(recall * precision) / (recall + precision)
-            print('\tth\t', format(threadhold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f'))    
+                if f1 >= maxF1:
+                    maxF1 = f1
+                    maxPr = precision
+                    maxRc = recall
+                    self.bestThreshold = threshold
+            print('\tth\t', format(threshold, '.5f'), '\tprecision\t', format(precision, '.5f'), '\trecall\t', format(recall, '.3f'), '\tf1\t', format(f1, '.5f'))    
 
     def recordResult(self, dataset, lengths, storeNames):
         self.mlModel.eval()
@@ -104,14 +113,17 @@ class Trainer(ITrainer):
         for validIdx in range(len(lengths)):
             validOutput = self.reconstruct(self.mlModel, dataset, lengths)
             for featIdx in range(dataset.shape[2]):
-                tl = validOutput[validIdx,:,featIdx]
-                t = dataset[validIdx,:,featIdx]
+                tl = validOutput[validIdx,0:lengths[validIdx],featIdx]
+                t = dataset[validIdx,0:lengths[validIdx],featIdx]
+                thresholdList = torch.zeros(t.shape)
+                thresholdList[:] = self.bestThreshold
+                thresholdList = thresholdList.reshape([-1]).tolist()
                 ts = t - tl
-                tlList = tl.reshape([-1])[0:lengths[validIdx]].tolist()
-                tList = t.reshape([-1])[0:lengths[validIdx]].tolist()
-                tsList = ts.reshape([-1])[0:lengths[validIdx]].abs().tolist()
+                tlList = tl.reshape([-1]).tolist()
+                tList = t.reshape([-1]).tolist()
+                tsList = ts.reshape([-1]).abs().tolist()
                 self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.experimentName + '-' + storeNames[validIdx] + '-feat' + str(featIdx))
-
+                self.logger.logResults([tsList, thresholdList], ["error", "threshold"], self.experimentName + '-' + storeNames[validIdx] + '-err-feat' + str(featIdx))
     def save(self):
         filename = self.experimentName + ".pt"
         torch.save(self.mlModel.state_dict(), path.join(globalConfig.getModelPath(), filename))

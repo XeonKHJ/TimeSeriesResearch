@@ -1,5 +1,8 @@
 from DataNormalizer.DataNormalizer import DataNormalizer
+from DataNormalizer.PerDataNormalizer import PerDataNormalizer
+from DataSeperator.TrainAndValidateDataSeprator import TrainAndValidateDataSeprator
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
+from DatasetReader.NABFilesReader import NABFilesReader
 from DatasetReader.NABFoldersReader import NABFoldersReader
 from TaskConfig.OneDAutoencoderConfig import OneDAutoencoderConfig
 
@@ -16,14 +19,15 @@ class OneDGruAENABAwsExperiment(object):
         return "OneDGruAENABAws"
 
     def getExperimentConfig(self):
-        dataReader = NABFoldersReader("../../NAB/", "realAWSCloudwatch")
-        displayDataReader = NABFoldersReader("../../NAB/", "realAWSCloudwatch")
+        dataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "ec2_cpu_utilization")
+        # dataReader = NABFoldersReader("../../NAB/", "realAWSCloudwatch")
+        displayDataReader = NABFoldersReader("../../NAB/", "ec2_network_in")
         config = OneDAutoencoderConfig(globalConfig.getModelPath(), self.logger, self.getName(), showTrainingInfo=True)
         trainer = config.getConfig()
         processers = [
             SlidingWindowStepDataProcessor(windowSize=100, step=20),
             ShuffleDataProcessor()
         ]
-        datasetSeperator = NoSepDataSeperator()        
-        dataNormalizer = DataNormalizer()
+        datasetSeperator = TrainAndValidateDataSeprator(0.5)        
+        dataNormalizer = PerDataNormalizer()
         return trainer, dataReader, dataReader, processers, datasetSeperator, dataNormalizer

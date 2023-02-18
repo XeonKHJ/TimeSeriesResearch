@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    experiment = AheadWithErrorGruAENATAwsEC2CPUExperiment(logger)
+    experiment = OneDGruAENABAwsExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data
@@ -73,7 +73,7 @@ if __name__ == '__main__':
             lengths = trainLabels[:, trainLabels.shape[1]-1]
             labels = trainLabels[:, 0:trainLabels.shape[1]-1]
             loss = trainer.train(trainData, lengths, labels)
-        if epoch % 50 == 0:
+        if epoch % 200 == 0:
             trainer.save()
             # for testData, testLabels in testDataLoader:
             #     lengths = testLabels[:, testLabels.shape[1]-1]

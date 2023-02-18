@@ -9,7 +9,7 @@ class DataNormalizer(IDataNormalizer):
         self.perData = perData
         pass
 
-    def addDatasetToRef(self, dataset):
+    def addDatasetToRef(self, dataset, lengths):
         curMax = torch.max(torch.max(dataset, 1)[0], 0)[0]
         curMin = torch.min(torch.min(dataset, 1)[0], 0)[0]
         if self.max == None:
@@ -23,7 +23,7 @@ class DataNormalizer(IDataNormalizer):
             self.min = torch.min(self.min, curMin)
         return
 
-    def normalizeDataset(self, dataset):
+    def normalizeDataset(self, dataset, lengths):
         curMin = self.min.reshape([1,-1 ,self.min.shape[0]]).expand_as(dataset)
         curMax = self.max.reshape([1,-1 ,self.max.shape[0]]).expand_as(dataset)
         dataset = (dataset - curMin) / (curMax - curMin)
