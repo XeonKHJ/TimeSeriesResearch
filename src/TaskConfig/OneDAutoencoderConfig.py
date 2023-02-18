@@ -12,17 +12,18 @@ import torch
 import os.path as path
 
 class OneDAutoencoderConfig(ITaskConfig):
-    def __init__(self, modelFolderPath, logger, experimentName, showTrainingInfo):
+    def __init__(self, modelFolderPath, logger, experimentName, showTrainingInfo, lr=1e-3):
         self.modelFolderPath = modelFolderPath
         self.logger = logger
         self.modelName = experimentName
         self.showTrainingInfo = showTrainingInfo
+        self.lr = lr
 
     def getConfig(self, isCuda = False):
         feature_size = 1
         output_size = 1
         mlModel = IterGruAutoencoder(feature_size,4,output_size,2)
-        trainer = Trainer(mlModel, self.logger, 1e-3, self.modelName, self.showTrainingInfo)
+        trainer = Trainer(mlModel, self.logger, self.lr, self.modelName, self.showTrainingInfo)
         try:
             trainer.load()
         except:
