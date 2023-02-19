@@ -47,7 +47,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
 
         self.forcastOptimizer.zero_grad()
         self.errorOptimizer.zero_grad()
-        error = self.errorModel(trainSet, lengths, int(trainSet.shape[1] / 2))
+        error = self.errorModel(trainSet, lengths, int(trainSet.shape[1] / 2)).detach()
         output = self.forcastModel(preSet, lengths / 2)
         tl = latterSet - error
         forcastLoss = self.lossFunc(output, tl)
@@ -55,7 +55,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         loss1 = forcastLoss + self.lambda1 * realLoss
         loss1.backward()
         self.forcastOptimizer.step()
-        self.errorOptimizer.step()
+        # self.errorOptimizer.step()
 
         # update error model
         self.errorOptimizer.zero_grad()
@@ -73,7 +73,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
         self.backwardOptimzer.step()
         
         backwardTime = time.perf_counter()
-        if self.showTrainningInfo or True:
+        if self.showTrainningInfo:
             # print(loss3)
             print("\tforcast\t", format(forcastLoss.item(), ".7f"), "\treal\t", format(realLoss.item(), ".7f"),"\tloss1\t", format(loss1.item(),".7f"),  "\tloss2\t", format(loss2.item(),".7f"), '\terror\t', torch.norm(error, p=1).item())
 
@@ -137,7 +137,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                 for predIdx in range(0, detectResult.shape[0], evalWindowSize):
                     realPosCount = 0
                     predPosCount = 0
-                    diff = detectResult[rangeIdx:rangeIdx+evalWindowSize]
+                    diff = detectResult[predIdx:predIdx+evalWindowSize]
                     predPosCount = torch.sum(diff).int().item()
                     evalBeginIdx = predIdx + step - evalWindowSize
                     evalEndIdx = predIdx + evalWindowSize - step
@@ -190,7 +190,7 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
                 self.logger.logResults([tList, tsList, tlList], ["t", "ts", "tl"], self.modelName + '-' + storeNames[validIdx] + '-forcast-feat' + str(featIdx))
                 self.logger.logResults([tList, tsNoAbs, errorList], ["t", "tsNoAbs", "error"], self.modelName + '-' + storeNames[validIdx] + '-error-feat' + str(featIdx))
                 self.logger.logResults([tList, sumList], ["t", "sum"], self.modelName + '-' + storeNames[validIdx] + '-sum-feat' + str(featIdx))
-                self.logger.logResults([tsNoAbs, fixedThresholdList], ["ts", "fixed threshold"], self.modelName + '-' + storeNames[validIdx] + '-fixthreshold-feat' + str(featIdx))
+                self.logger.logResults([tsList, fixedThresholdList], ["ts", "fixed threshold"], self.modelName + '-' + storeNames[validIdx] + '-fixthreshold-feat' + str(featIdx))
                 if self.toRecordThresholds != None:
                     self.logger.logResults([self.toRecordDiffs[validIdx, 0:lengths[validIdx]].abs().reshape(-1).tolist(), self.toRecordThresholds[validIdx, 0:lengths[validIdx]].reshape(-1).tolist()], ["error", "treshold"], self.modelName + '-' + storeNames[validIdx] + '-threshold-' '-feat' + str(featIdx))
     def save(self):

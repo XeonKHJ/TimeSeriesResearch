@@ -18,15 +18,15 @@ from globalConfig import globalConfig
 from DataProcessor.ShuffleDataProcessor import ShuffleDataProcessor
 from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 
-class AheadWithErrorGruAENATAwsEC2NetworkExperiment(object):
+class AheadWithErrorGruAENATTraSpdExperiment(object):
     def __init__(self, logger):
         self.logger = logger
 
     def getName(self):
-        return "AheadWithErrorGruAENATAwsEC2Network"
+        return "AheadWithErrorGruAETraSpd"
 
     def getExperimentConfig(self):
-        normalDataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "ec2_network_in")
+        normalDataReader = NABFilesReader("../../NAB/", "realTraffic", "speed")
         # normalDataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv")
         # dataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv")
         config = AheadWithErrorTaskConfig(self.logger, self.getName(), showTrainingInfo=False)

@@ -1,3 +1,4 @@
+from Experiment.AheadWithErrorGruAENABArtiDailyExperiment import AheadWithErrorGruAENABArtiDailyExperiment
 from Experiment.AheadWithErrorGruAENATAwsEC2CPUExperiment import AheadWithErrorGruAENATAwsEC2CPUExperiment
 import torch
 import torch.nn
@@ -7,17 +8,28 @@ from Dataset.RegularDataset import RegularDataset
 from Experiment.AheadGruAEArtiExperiment import AheadGruAEArtiExperiment
 from Experiment.AheadWithErrorGruAEArtiExperiment import AheadWithErrorGruAEArtiExperiment
 from Experiment.AheadWithErrorGruAENATAwsEC2DiskWriteExperiment import AheadWithErrorGruAENATAwsEC2DiskWriteExperiment
+from Experiment.AheadWithErrorGruAENATAwsEC2NetworkExperiment import AheadWithErrorGruAENATAwsEC2NetworkExperiment
+from Experiment.AheadWithErrorGruAENATAwsElbReqExperiment import AheadWithErrorGruAENATAwsElbReqExperiment
+from Experiment.AheadWithErrorGruAENATExCpcExperiment import AheadWithErrorGruAENATExCpcExperiment
+from Experiment.AheadWithErrorGruAENATExCpmExperiment import AheadWithErrorGruAENATExCpmExperiment
+from Experiment.AheadWithErrorGruAENATTraOccuExperiment import AheadWithErrorGruAENATTraOccuExperiment
+from Experiment.AheadWithErrorGruAENATTraSpdExperiment import AheadWithErrorGruAENATTraSpdExperiment
+from Experiment.AheadWithErrorGruAENABTweetExperiment import AheadWithErrorGruAENABTweetExperiment
+from Experiment.AheadWithErrorGruAENATTraTtExperiment import AheadWithErrorGruAENATTraTtExperiment
 from Experiment.GeneratedRAENABArtiExperiment import GeneratedRAENABArtiExperiment
 from Experiment.GruAENABAWSExperiment import GruAENABAWSExperiment
+from Experiment.OneDGruAENABArtDailyExperiment import OneDGruAENABArtDailyExperiment
 from Experiment.OneDGruAENABAwsEC2CPUExperiment import OneDGruAENABAwsEC2CPUExperiment
 from Experiment.OneDGruAENABAwsEC2DiskWriteExperiment import OneDGruAENABAwsEC2DiskWriteExperiment
 from Experiment.OneDGruAENABAwsEC2NetwworkInExperiment import OneDGruAENABAwsEC2NetworkInExperiment
 from Experiment.OneDGruAENABAwsElbReqExperiment import OneDGruAENABAwsElbReqExperiment
+from Experiment.OneDGruAENABExCpcExperiment import OneDGruAENABExCpcExperiment
+from Experiment.OneDGruAENABExCpmExperiment import OneDGruAENABExCpmExperiment
 from Experiment.OneDGruAENABTraOccuExperiment import OneDGruAENABTraOccuExperiment
 from Experiment.OneDGruAENABTraSpdExperiment import OneDGruAENABTraSpdExperiment
 from Experiment.OneDGruAENABTraTtExperiment import OneDGruAENABTraTtExperiment
 from Experiment.OneDGruAENABTweetExperiment import OneDGruAENABTweetExperiment
-from Experiment.RAENABArtiExperiment import RAENABArtiExperiment
+from Experiment.RAENABExperiment import RAENABExperiment
 from Logger.PlotLogger import PlotLogger
 
 from Experiment.GruAENABArtiExperiment import GruAENABArtiExperiment
@@ -38,7 +50,8 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    experiment = OneDGruAENABTraTtExperiment(logger)
+    # experiment = RAENABExperiment(logger, "realAWSCloudwatch", "network_in")
+    experiment = AheadWithErrorGruAENABTweetExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data
@@ -72,7 +85,7 @@ if __name__ == '__main__':
     epoch = 0
     keepTrainning = True
 
-    trainDataLoader = DataLoader(trainDataset, batch_size=1000, shuffle=True)
+    trainDataLoader = DataLoader(trainDataset, batch_size=1000, shuffle=False)
     testDataLoader = DataLoader(testDataset, shuffle=False, batch_size=testDataTensor.shape[0])
     validDataLaoder = DataLoader(validDataset, shuffle=False, batch_size = validDataTensor.shape[0])
 
@@ -81,7 +94,7 @@ if __name__ == '__main__':
             lengths = trainLabels[:, trainLabels.shape[1]-1]
             labels = trainLabels[:, 0:trainLabels.shape[1]-1]
             loss = trainer.train(trainData, lengths, labels)
-        if epoch % 1000 == 0:
+        if epoch % 50 == 0:
             trainer.save()
             # for testData, testLabels in testDataLoader:
             #     lengths = testLabels[:, testLabels.shape[1]-1]

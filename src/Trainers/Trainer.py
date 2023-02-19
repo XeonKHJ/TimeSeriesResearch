@@ -80,7 +80,7 @@ class Trainer(ITrainer):
                 for predIdx in range(0, evalOutput.shape[0], evalWindowSize):
                     realPosCount = 0
                     predPosCount = 0
-                    diff = detectResult[rangeIdx]
+                    diff = detectResult[predIdx]
                     predPosCount = torch.sum(diff).int().item()
                     evalBeginIdx = evalIdx + step - evalWindowSize
                     evalEndIdx = evalIdx + evalWindowSize - step

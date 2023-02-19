@@ -18,18 +18,18 @@ from globalConfig import globalConfig
 from DataProcessor.ShuffleDataProcessor import ShuffleDataProcessor
 from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 
-class AheadWithErrorGruAENATAwsEC2NetworkExperiment(object):
+class AheadWithErrorGruAENATAwsElbReqExperiment(object):
     def __init__(self, logger):
         self.logger = logger
 
     def getName(self):
-        return "AheadWithErrorGruAENATAwsEC2Network"
+        return "AheadWithErrorGruAENATAwsElbReq"
 
     def getExperimentConfig(self):
-        normalDataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "ec2_network_in")
+        normalDataReader = NABFilesReader("../../NAB/", "realAWSCloudwatch", "elb_request_count")
         # normalDataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv")
         # dataReader = NABFileReader("../../NAB/", "realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv")
-        config = AheadWithErrorTaskConfig(self.logger, self.getName(), showTrainingInfo=False)
+        config = AheadWithErrorTaskConfig(self.logger, self.getName(), showTrainingInfo=True)
         trainer = config.getConfig()
         windowSize = 200
         processers = [

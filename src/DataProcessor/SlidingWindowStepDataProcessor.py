@@ -11,7 +11,7 @@ class SlidingWindowStepDataProcessor:
         newData = []
         lengthsTensor = torch.tensor(lengths)
         for idx in range(0, data.shape[1], self.step):
-            inRangeTensor = idx+self.windowSize < lengthsTensor
+            inRangeTensor = idx+self.windowSize <= lengthsTensor
             inRangeCount = torch.sum(inRangeTensor).int().item()
             if inRangeCount > 0:
                 segementedData = data[0:inRangeCount, idx:idx+self.windowSize,:]

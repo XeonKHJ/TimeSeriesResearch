@@ -1,32 +1,30 @@
 from DataNormalizer.DataNormalizer import DataNormalizer
-from DataProcessor.PartitionDataProcessor import PartitionDataProcessor
 from DataSeperator.NoSepDataSeperator import NoSepDataSeperator
+from DatasetReader.NABFilesReader import NABFilesReader
 from DatasetReader.NABFoldersReader import NABFoldersReader
 from TaskConfig.OneDAutoencoderConfig import OneDAutoencoderConfig
-from TaskConfig.RAETaskConfig import RAETaskConfig
 
 from globalConfig import globalConfig
 
 from DataProcessor.ShuffleDataProcessor import ShuffleDataProcessor
 from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 
-# RAE on NAB artifical dataset.
-class RAENABArtiExperiment(object):
+class OneDGruAENABArtDailyExperiment(object):
     def __init__(self, logger):
         self.logger = logger
 
     def getName(self):
-        return "RAENABArti"
+        return "OneDGruAENABArtDaily"
 
     def getExperimentConfig(self):
-        dataReader = NABFoldersReader("../../NAB/", "artificial")
-        validDataReader = NABFoldersReader("../../NAB/", "artificial")
-        config = RAETaskConfig(self.logger, self.getName(), showTrainningInfo=True)
+        dataReader = NABFilesReader("../../NAB/", "artificialWithAnomaly", "art_daily")
+        displayDataReader = NABFoldersReader("../../NAB/", "artificial")
+        config = OneDAutoencoderConfig(globalConfig.getModelPath(), self.logger, self.getName(), showTrainingInfo=False)
         trainer = config.getConfig()
         processers = [
-            PartitionDataProcessor(0.5),
+            SlidingWindowStepDataProcessor(windowSize=100, step=1),
             ShuffleDataProcessor()
         ]
         datasetSeperator = NoSepDataSeperator()        
         dataNormalizer = DataNormalizer()
-        return trainer, dataReader, validDataReader, processers, datasetSeperator, dataNormalizer
+        return trainer, dataReader, dataReader, processers, datasetSeperator, dataNormalizer

@@ -1,3 +1,4 @@
+from DataProcessor.SlidingWindowStepDataProcessor import SlidingWindowStepDataProcessor
 from Trainers.ITrainer import ITrainer
 import torch
 import time
@@ -61,15 +62,26 @@ class RAETrainer(ITrainer):
         self.aeModel.eval()
         reconstructData = self.aeModel(validDataset, validsetLengths)
         error = torch.abs(reconstructData-validDataset)
+
         evalWindowSize = 100
+
+        slidingProcessor = SlidingWindowStepDataProcessor(evalWindowSize, 1)
+        toEvalSplitedDataList = list()
+        for idx in range(len(validsetLengths)):
+            windowedData, toEvalDataLength = slidingProcessor.process(error[idx:idx+1], [validsetLengths[idx]])
+            toEvalSplitedDataList.append({"data":windowedData, "length":toEvalDataLength})
+
+        
+        # windowedLabel, windowedLengths = slidingProcessor.process(labels, validsetLengths)
         for threadhold in [0.3, 0.2, 0.1, 0.09, 0.07, 0.05, 0.03, 0.01, 0.001, 0.0005, 0.0001]:
             truePositive = 0
             falsePostive = 0
             falseNegative = 0
             step = 20
             for evalIdx in range(0, len(validsetLengths)):
-                evalOutput = error[evalIdx, 0:validsetLengths[evalIdx].int().item()]
+                evalOutput = toEvalSplitedDataList[evalIdx]["data"]
                 detectResult = evalOutput > threadhold
+                
                 for labelIdx in range(0, validsetLengths[evalIdx].int().item(), evalWindowSize):
                     realPosCount = 0
                     predPosCount = 0
@@ -94,10 +106,10 @@ class RAETrainer(ITrainer):
                     elif realPosCount != 0 and predPosCount == 0:
                         falseNegative += 1
 
-                for predIdx in range(0, evalOutput.shape[1], evalWindowSize):
+                for predIdx in range(0, detectResult.shape[0], evalWindowSize):
                     realPosCount = 0
                     predPosCount = 0
-                    diff = detectResult[rangeIdx:rangeIdx+evalWindowSize]
+                    diff = detectResult[predIdx]
                     predPosCount = torch.sum(diff).int().item()
                     evalBeginIdx = evalIdx + step - evalWindowSize
                     evalEndIdx = evalIdx + evalWindowSize - step
