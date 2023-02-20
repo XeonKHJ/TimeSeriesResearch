@@ -1,1 +1,0 @@
-This folder contains datasets that have been proceessed to fit the program's behavior.
