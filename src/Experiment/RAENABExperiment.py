@@ -26,11 +26,11 @@ class RAENABExperiment(object):
     def getExperimentConfig(self):
         dataReader = NABFilesReader("../../NAB/", self.firstName, self.secondName)
         # validDataReader = NABFoldersReader("../../NAB/", "artificial")
-        config = RAETaskConfig(self.logger, self.getName(), showTrainningInfo=True)
+        config = RAETaskConfig(self.logger, self.getName(), showTrainningInfo=False)
         trainer = config.getConfig()
         processers = [
             PartitionDataProcessor(0.5),
-            ShuffleDataProcessor()
+            # ShuffleDataProcessor()
         ]
         datasetSeperator = NoSepDataSeperator()        
         dataNormalizer = PerDataNormalizer()
