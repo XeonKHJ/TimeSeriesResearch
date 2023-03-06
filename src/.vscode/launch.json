@@ -5,12 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: castpredict",
+            "type": "python",
+            "request": "launch",
+            "program": "castingpredict.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Train",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
-            "args": ["--disablePlot"],
+            "args": [
+                "--disablePlot"
+            ],
             "justMyCode": true
         },
         {
@@ -19,7 +29,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/newMain.py",
             "console": "integratedTerminal",
-            "args": ["--disablePlot"],
+            "args": [
+                "--disablePlot"
+            ],
             "justMyCode": true
         },
         {
@@ -36,7 +48,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/eval.py",
             "console": "integratedTerminal",
-            "args": ["--disablePlot"],
+            "args": [
+                "--disablePlot"
+            ],
             "justMyCode": true
         }
     ]

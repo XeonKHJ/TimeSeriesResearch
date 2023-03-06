@@ -50,8 +50,8 @@ if __name__ == '__main__':
 
     logger = PlotLogger((not args.disablePlot))
 
-    # experiment = RAENABExperiment(logger, "realAWSCloudwatch", "network_in")
-    experiment = AheadWithErrorGruAENABTweetExperiment(logger)
+    # experiment = RAENABExperiment(logger, "realTweets", "Twitter")
+    experiment = AheadWithErrorGruAEArtiExperiment(logger)
     trainer, trainDataReader, validDataReader, processers, datasetSeperator, dataNormalizer = experiment.getExperimentConfig()
 
     # load data
