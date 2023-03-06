@@ -227,10 +227,10 @@ class AheadWithErrorGeneratorTrainer(ITrainer):
     def reconstructError(self, validDataset, validsetLength):
         reconstructSeqs = torch.zeros(validDataset.shape, device=torch.device('cuda'))
         preIdx = -100
-        for idx in range(0, validDataset.shape[1] - 2 * self.windowSize, self.windowSize):
+        for idx in range(0, validDataset.shape[1] - 2 * self.windowSize, int(self.windowSize/4)):
             if idx+2*self.windowSize > reconstructSeqs.shape[1]:
                 break
-            lengths = torch.tensor(self.windowSize).repeat(validDataset.shape[0]).int()
+            lengths = torch.tensor(2*self.windowSize).repeat(validDataset.shape[0]).int()
             reconstructSeqs[:,idx+self.windowSize:idx+2*self.windowSize,:] = self.errorModel(validDataset[:,idx:idx+2*self.windowSize,:], lengths, self.windowSize)
             preIdx = idx
             
